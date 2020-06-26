@@ -1,0 +1,11 @@
+.*.sw[op]
+logs
+bin
+configs/avp.pid
+cmd/avp/avp
+./ion
+.idea
+node_modules/
+cover.out
+main
+.DS_Store

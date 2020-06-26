@@ -1,0 +1,25 @@
+[grpc]
+# internet ip
+port = ":50051"
+
+[pipeline.samplebuilder]
+# max late for audio rtp packets
+audiomaxlate = 100
+# max late for video rtp packets
+videomaxlate = 200
+
+[pipeline.webmsaver]
+enabled = true
+togglable = true
+defaulton = true
+# webm output path
+path = "./out/"
+
+[rtp]
+# listen port
+port = 6668
+
+# kcpkey = ""
+# kcpsalt = ""
+[log]
+level = "info"

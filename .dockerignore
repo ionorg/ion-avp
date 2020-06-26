@@ -1,0 +1,10 @@
+.git
+.github
+.gitignore
+.idea
+Dockerfile
+docker-compose.yml
+docker
+docs
+screenshots
+npm-debug.log
