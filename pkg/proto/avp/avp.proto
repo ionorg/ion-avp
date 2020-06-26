@@ -9,7 +9,9 @@ service AVP {
     rpc StopProcess(StopProcessRequest) returns (StopProcessReply) {}
 }
 
-message StartProcessRequest {}
+message StartProcessRequest {
+    Element element = 1;
+}
 message StartProcessReply {}
 message StopProcessRequest {}
 message StopProcessReply {}

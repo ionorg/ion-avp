@@ -10,6 +10,7 @@ import (
 
 var (
 	cfg      = Config{}
+	GRPC     = &cfg.GRPC
 	Pipeline = &cfg.Pipeline
 	Rtp      = &cfg.Rtp
 	Log      = &cfg.Log
@@ -21,6 +22,10 @@ func init() {
 		showHelp()
 		os.Exit(-1)
 	}
+}
+
+type grpc struct {
+	Port string `mapstructure:"port"`
 }
 
 type samplebuilder struct {
@@ -52,6 +57,7 @@ type rtp struct {
 
 // Config for base AVP
 type Config struct {
+	GRPC     grpc     `mapstructure:"grpc"`
 	Pipeline pipeline `mapstructure:"pipeline"`
 	Rtp      rtp      `mapstructure:"rtp"`
 	Log      log      `mapstructure:"log"`

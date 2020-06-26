@@ -19,7 +19,7 @@ var (
 )
 
 type getDefaultElementsFn func(id string) map[string]Element
-type getTogglableElementFn func(msg avp.Element) (Element, error)
+type getTogglableElementFn func(e *avp.Element) (Element, error)
 
 // Config for pipeline
 type Config struct {
@@ -111,7 +111,7 @@ func (p *Pipeline) start() {
 }
 
 // AddElement add a element to pipeline
-func (p *Pipeline) AddElement(e avp.Element) {
+func (p *Pipeline) AddElement(e *avp.Element) {
 	if p.elements[e.Type] != nil {
 		log.Errorf("Pipeline.AddElement element %s already exists.", e.Type)
 		return
