@@ -3,6 +3,7 @@ module github.com/pion/ion-avp
 go 1.13
 
 require (
+	github.com/at-wat/ebml-go v0.11.0
 	github.com/golang/protobuf v1.4.2
 	github.com/pion/ion-elements v0.1.3 // indirect
 	github.com/pion/ion-sfu v0.0.0-20200626001722-ef141a3677a2
