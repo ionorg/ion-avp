@@ -29,12 +29,12 @@ _lint_job: &lint_job
 _build_job: &build_job
   env: CACHE_NAME=build
   script:
-    - go build ./cmd/avp
+    - go build ./cmd/main.go
 
 _build_avp_docker_job: &build_avp_docker_job
   env: CACHE_NAME=build_avp_docker
   script:
-    - docker build --tag pionwebrtc/ion-avp:latest -f ./docker/avp.Dockerfile .
+    - docker build --tag pionwebrtc/ion-avp:latest .
   before_deploy:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     - docker tag pionwebrtc/ion-avp:latest pionwebrtc/ion-avp:"$TRAVIS_TAG"
