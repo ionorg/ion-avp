@@ -3,9 +3,9 @@ package elements
 import (
 	"os"
 
+	avp "github.com/pion/ion-avp/pkg"
 	"github.com/pion/ion-avp/pkg/log"
-	"github.com/pion/ion-avp/pkg/process"
-	"github.com/pion/ion-avp/pkg/process/samples"
+	"github.com/pion/ion-avp/pkg/samples"
 )
 
 const (
@@ -59,7 +59,7 @@ func (w *FileWriter) Read() <-chan *samples.Sample {
 }
 
 // Attach attach a child element
-func (w *FileWriter) Attach(e process.Element) error {
+func (w *FileWriter) Attach(e avp.Element) error {
 	return ErrAttachNotSupported
 }
 

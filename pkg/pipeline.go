@@ -1,12 +1,12 @@
-package process
+package avp
 
 import (
 	"sync"
 	"time"
 
+	avp "github.com/pion/ion-avp/cmd/server/grpc/proto"
 	"github.com/pion/ion-avp/pkg/log"
-	"github.com/pion/ion-avp/pkg/process/samples"
-	avp "github.com/pion/ion-avp/pkg/proto/avp"
+	"github.com/pion/ion-avp/pkg/samples"
 	"github.com/pion/ion-sfu/pkg/rtc/transport"
 )
 
@@ -15,14 +15,14 @@ const (
 )
 
 var (
-	config Config
+	config PipelineConfig
 )
 
 type getDefaultElementsFn func(id string) map[string]Element
 type getTogglableElementFn func(e *avp.Element) (Element, error)
 
-// Config for pipeline
-type Config struct {
+// PipelineConfig for pipeline
+type PipelineConfig struct {
 	SampleBuilder       samples.BuilderConfig
 	GetDefaultElements  getDefaultElementsFn
 	GetTogglableElement getTogglableElementFn
@@ -46,7 +46,7 @@ type Pipeline struct {
 }
 
 // InitPipeline .
-func InitPipeline(c Config) {
+func InitPipeline(c PipelineConfig) {
 	config = c
 }
 
