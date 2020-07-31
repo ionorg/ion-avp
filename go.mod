@@ -9,6 +9,6 @@ require (
 	github.com/pion/rtp v1.6.0
 	github.com/pion/webrtc/v2 v2.2.23
 	github.com/rs/zerolog v1.19.0
-	github.com/spf13/viper v1.7.0
+	github.com/spf13/viper v1.7.1
 	google.golang.org/grpc v1.26.0
 )
