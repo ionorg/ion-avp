@@ -14,10 +14,6 @@ const (
 	liveCycle = 6 * time.Second
 )
 
-var (
-	config PipelineConfig
-)
-
 type getDefaultElementsFn func(id string) map[string]Element
 type getTogglableElementFn func(e *avp.Element) (Element, error)
 
@@ -36,6 +32,7 @@ type PipelineConfig struct {
 //                                            |
 //                                            +--->element
 type Pipeline struct {
+	config        PipelineConfig
 	pub           transport.Transport
 	elements      map[string]Element
 	elementLock   sync.RWMutex
@@ -45,15 +42,11 @@ type Pipeline struct {
 	liveTime      time.Time
 }
 
-// InitPipeline .
-func InitPipeline(c PipelineConfig) {
-	config = c
-}
-
 // NewPipeline return a new Pipeline
-func NewPipeline(id string, pub transport.Transport) *Pipeline {
+func NewPipeline(id string, config PipelineConfig, pub transport.Transport) *Pipeline {
 	log.Infof("NewPipeline id=%s", id)
 	p := &Pipeline{
+		config:        config,
 		pub:           pub,
 		elements:      config.GetDefaultElements(id),
 		elementChans:  make(map[string]chan *samples.Sample),
@@ -116,7 +109,7 @@ func (p *Pipeline) AddElement(e *avp.Element) {
 		log.Errorf("Pipeline.AddElement element %s already exists.", e.Type)
 		return
 	}
-	element, err := config.GetTogglableElement(e)
+	element, err := p.config.GetTogglableElement(e)
 	if err != nil {
 		log.Errorf("GetTogglableElement error => %s", err)
 		return

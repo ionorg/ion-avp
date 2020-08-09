@@ -139,7 +139,7 @@ func main() {
 
 func (s *server) StartProcess(ctx context.Context, in *pb.StartProcessRequest) (*pb.StartProcessReply, error) {
 	log.Infof("process einfo=%v", in.Element)
-	pipeline := avp.GetPipeline(in.Element.Mid)
+	pipeline := s.avp.GetPipeline(in.Element.Mid)
 	if pipeline == nil {
 		return nil, errors.New("process: pipeline not found")
 	}
