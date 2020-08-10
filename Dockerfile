@@ -10,7 +10,7 @@ RUN cd $GOPATH/src/github.com/pion/ion-avp && go mod download
 COPY pkg/ $GOPATH/src/github.com/pion/ion-avp/pkg
 COPY cmd/ $GOPATH/src/github.com/pion/ion-avp/cmd
 
-WORKDIR $GOPATH/src/github.com/pion/ion-avp/cmd
+WORKDIR $GOPATH/src/github.com/pion/ion-avp/cmd/server/grpc
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /avp .
 
 FROM alpine:3.12.0
