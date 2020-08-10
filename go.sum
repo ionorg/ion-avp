@@ -203,6 +203,7 @@ github.com/pion/ice/v2 v2.0.0-rc.8/go.mod h1:BH71LWfapOO69LRT1b+Rg9/be1qQPjSZT9P
 github.com/pion/ion-sfu v0.0.0-20200810130608-808a0698e46a h1:Js6tsEXaWSDsHX4EaG7lQQpWwRybvOPib44Jw6VwfjY=
 github.com/pion/ion-sfu v0.0.0-20200810130608-808a0698e46a h1:Js6tsEXaWSDsHX4EaG7lQQpWwRybvOPib44Jw6VwfjY=
 github.com/pion/ion-sfu v0.0.0-20200810130608-808a0698e46a/go.mod h1:P7XNrdH2czmgTaVRdXd4ze5Dz+eWXQuaLm+FFZO+iUA=
+github.com/pion/ion-sfu v0.0.0-20200810163123-652866930a0b h1:13X4BGv1adKgPqxrjxfx1VTgDB1J/1Jy+lBRnlWzQqg=
 github.com/pion/logging v0.2.2 h1:M9+AIj/+pxNsDfAT64+MAVgJO0rsyLnoJKCqf//DoeY=
 github.com/pion/logging v0.2.2/go.mod h1:k0/tDVsRCX2Mb2ZEmTqNa7CWsQPc+YYCB7Q+5pahoms=
 github.com/pion/mdns v0.0.4 h1:O4vvVqr4DGX63vzmO6Fw9vpy3lfztVWHGCQfyw0ZLSY=

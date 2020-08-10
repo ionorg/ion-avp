@@ -168,6 +168,7 @@ func (s *server) Signal(stream pb.AVP_SignalServer) error {
 }
 
 func (s *server) join(ctx context.Context, addr, sid string) {
+	log.Infof("Joining sfu: %s session: %s", addr, sid)
 	// Set up a connection to the sfu server.
 	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
@@ -184,6 +185,57 @@ func (s *server) join(ctx context.Context, addr, sid string) {
 	}
 
 	t := s.avp.NewWebRTCTransport(sid, conf)
+
+	offer, err := t.CreateOffer()
+	if err != nil {
+		log.Errorf("Error creating offer: %v", err)
+		return
+	}
+
+	if err = t.SetLocalDescription(offer); err != nil {
+		log.Errorf("Error setting local description: %v", err)
+		return
+	}
+
+	err = sfustream.Send(
+		&sfu.SignalRequest{
+			Payload: &sfu.SignalRequest_Join{
+				Join: &sfu.JoinRequest{
+					Sid: sid,
+					Offer: &sfu.SessionDescription{
+						Type: offer.Type.String(),
+						Sdp:  []byte(offer.SDP),
+					},
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		log.Errorf("Error sending publish request: %v", err)
+		return
+	}
+
+	t.OnICECandidate(func(c *webrtc.ICECandidate) {
+		if c == nil {
+			// Gathering done
+			return
+		}
+		bytes, err := json.Marshal(c.ToJSON())
+		if err != nil {
+			log.Errorf("OnIceCandidate error %s", err)
+		}
+		err = sfustream.Send(&sfu.SignalRequest{
+			Payload: &sfu.SignalRequest_Trickle{
+				Trickle: &sfu.Trickle{
+					Init: string(bytes),
+				},
+			},
+		})
+		if err != nil {
+			log.Errorf("OnIceCandidate error %s", err)
+		}
+	})
 
 	// Handle sfu stream messages
 	for {
@@ -214,6 +266,15 @@ func (s *server) join(ctx context.Context, addr, sid string) {
 		}
 
 		switch payload := res.Payload.(type) {
+		case *sfu.SignalReply_Join:
+			// Set the remote SessionDescription
+			if err = t.SetRemoteDescription(webrtc.SessionDescription{
+				Type: webrtc.SDPTypeAnswer,
+				SDP:  string(payload.Join.Answer.Sdp),
+			}); err != nil {
+				panic(err)
+			}
+
 		case *sfu.SignalReply_Negotiate:
 			if payload.Negotiate.Type == webrtc.SDPTypeOffer.String() {
 				offer := webrtc.SessionDescription{

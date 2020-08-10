@@ -74,6 +74,12 @@ func (t *WebRTCTransport) AddICECandidate(candidate webrtc.ICECandidateInit) err
 	return t.pc.AddICECandidate(candidate)
 }
 
+// OnICECandidate sets an event handler which is invoked when a new ICE candidate is found.
+// Take note that the handler is gonna be called with a nil pointer when gathering is finished.
+func (t *WebRTCTransport) OnICECandidate(f func(c *webrtc.ICECandidate)) {
+	t.pc.OnICECandidate(f)
+}
+
 // AddElement add a processing element for track
 func (t *WebRTCTransport) AddElement(ssrc uint32, e Element) {
 	log.Infof("WebRTCTransport.AddElement type=%s", e.Type())
