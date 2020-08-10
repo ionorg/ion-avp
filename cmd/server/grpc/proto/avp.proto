@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+option go_package = "github.com/pion/ion-avp/cmd/server/grpc/proto";
+
+package avp;
+
+service AVP {
+    rpc Signal(stream SignalRequest) returns (stream SignalReply) {}
+}
+
+message SignalRequest {
+    oneof payload {
+        JoinRequest join = 1;
+        Element element = 2;
+    }
+}
+
+message SignalReply {
+    oneof payload {
+        JoinReply join = 1;
+    }
+}
+
+message JoinRequest {
+    string sfu = 1;
+    string sid = 2;
+}
+
+message JoinReply {
+    string sid = 1;
+}
+
+// Element describes an a/v process
+message Element {
+    string sid = 1;
+    uint32 ssrc = 2;
+    string type = 3;
+    bytes config = 4;
+}

@@ -1,7 +1,7 @@
-package process
+package avp
 
 import (
-	"github.com/pion/ion-avp/pkg/process/samples"
+	"github.com/pion/ion-avp/pkg/samples"
 )
 
 // Element interface

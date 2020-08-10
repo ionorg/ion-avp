@@ -3,9 +3,9 @@ package elements
 import (
 	"github.com/at-wat/ebml-go/webm"
 
+	avp "github.com/pion/ion-avp/pkg"
 	"github.com/pion/ion-avp/pkg/log"
-	"github.com/pion/ion-avp/pkg/process"
-	"github.com/pion/ion-avp/pkg/process/samples"
+	"github.com/pion/ion-avp/pkg/samples"
 )
 
 const (
@@ -54,7 +54,7 @@ func (s *WebmSaver) Read() <-chan *samples.Sample {
 }
 
 // Attach attach a child element
-func (s *WebmSaver) Attach(e process.Element) error {
+func (s *WebmSaver) Attach(e avp.Element) error {
 	return s.sampleWriter.Attach(e)
 }
 
@@ -149,18 +149,18 @@ func (s *WebmSaver) initWriter(width, height int) {
 
 // SampleWriter for writing samples
 type SampleWriter struct {
-	childElements map[string]process.Element
+	childElements map[string]avp.Element
 }
 
 // NewSampleWriter creates a new sample writer
 func NewSampleWriter() *SampleWriter {
 	return &SampleWriter{
-		childElements: make(map[string]process.Element),
+		childElements: make(map[string]avp.Element),
 	}
 }
 
 // Attach a child element
-func (w *SampleWriter) Attach(e process.Element) error {
+func (w *SampleWriter) Attach(e avp.Element) error {
 	if w.childElements[e.Type()] == nil {
 		log.Infof("Transcribe.Attach element => %s", e.Type())
 		w.childElements[e.Type()] = e
