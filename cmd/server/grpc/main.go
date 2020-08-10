@@ -262,7 +262,7 @@ func (s *server) join(ctx context.Context, addr, sid string) {
 			}
 
 			log.Errorf("Error receiving signal response: %v", err)
-			continue
+			return
 		}
 
 		switch payload := res.Payload.(type) {
