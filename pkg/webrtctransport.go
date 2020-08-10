@@ -20,7 +20,10 @@ type WebRTCTransport struct {
 // NewWebRTCTransport creates a new webrtc transport
 func NewWebRTCTransport(id string, config Config) *WebRTCTransport {
 	// Create peer connection
-	pc, err := webrtc.NewPeerConnection(webrtc.Configuration{
+	me := webrtc.MediaEngine{}
+	me.RegisterDefaultCodecs()
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	pc, err := api.NewPeerConnection(webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
 			{
 				URLs: []string{"stun:stun.l.google.com:19302"},
@@ -40,6 +43,7 @@ func NewWebRTCTransport(id string, config Config) *WebRTCTransport {
 	}
 
 	pc.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver) {
+		log.Infof("Got track ssrc: %d", track.SSRC())
 		pipeline := NewPipeline(track)
 		t.mu.Lock()
 		t.pipelines[track.SSRC()] = pipeline

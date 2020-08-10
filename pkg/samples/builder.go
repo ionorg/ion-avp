@@ -48,6 +48,7 @@ func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
 
 	b := &Builder{
 		builder: samplebuilder.New(maxLate, depacketizer),
+		track:   track,
 		outChan: make(chan *Sample, maxSize),
 	}
 

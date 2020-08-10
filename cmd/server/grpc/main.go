@@ -272,7 +272,8 @@ func (s *server) join(ctx context.Context, addr, sid string) {
 				Type: webrtc.SDPTypeAnswer,
 				SDP:  string(payload.Join.Answer.Sdp),
 			}); err != nil {
-				panic(err)
+				log.Errorf("join error %s", err)
+				return
 			}
 
 		case *sfu.SignalReply_Negotiate:
