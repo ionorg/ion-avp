@@ -12,8 +12,7 @@ type samplebuilder struct {
 }
 
 type pipeline struct {
-	SampleBuilder samplebuilder `mapstructure:"samplebuilder"`
-	WebmSaver     webmsaver     `mapstructure:"webmsaver"`
+	WebmSaver webmsaver `mapstructure:"webmsaver"`
 }
 
 type webmsaver struct {
@@ -23,17 +22,10 @@ type webmsaver struct {
 	Path      string `mapstructure:"path"`
 }
 
-type rtp struct {
-	Port    int    `mapstructure:"port"`
-	KcpKey  string `mapstructure:"kcpkey"`
-	KcpSalt string `mapstructure:"kcpsalt"`
-}
-
 // Config for base AVP
 type Config struct {
-	GRPC     grpc       `mapstructure:"grpc"`
-	Pipeline pipeline   `mapstructure:"pipeline"`
-	Rtp      rtp        `mapstructure:"rtp"`
-	Log      log.Config `mapstructure:"log"`
-	CfgFile  string
+	GRPC          grpc          `mapstructure:"grpc"`
+	Pipeline      pipeline      `mapstructure:"pipeline"`
+	Log           log.Config    `mapstructure:"log"`
+	SampleBuilder samplebuilder `mapstructure:"samplebuilder"`
 }

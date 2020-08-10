@@ -1,131 +1,78 @@
 package avp
 
 import (
+	"errors"
 	"sync"
-	"time"
 
-	avp "github.com/pion/ion-avp/cmd/server/grpc/proto"
 	"github.com/pion/ion-avp/pkg/log"
 	"github.com/pion/ion-avp/pkg/samples"
-	"github.com/pion/ion-sfu/pkg/rtc/transport"
+	"github.com/pion/webrtc/v3"
 )
-
-const (
-	liveCycle = 6 * time.Second
-)
-
-type getDefaultElementsFn func(id string) map[string]Element
-type getTogglableElementFn func(e *avp.Element) (Element, error)
-
-// PipelineConfig for pipeline
-type PipelineConfig struct {
-	SampleBuilder       samples.BuilderConfig
-	GetDefaultElements  getDefaultElementsFn
-	GetTogglableElement getTogglableElementFn
-}
 
 // Pipeline constructs a processing graph
 //
-//                                            +--->element
-//                                            |
-// pub--->pubCh-->sampleBuilder-->elementCh---+--->element
-//                                            |
-//                                            +--->element
+//          +--->elementCh--->element
+//          |
+// builder--+--->elementCh--->element
+//          |
+//          +--->elementCh--->element
 type Pipeline struct {
-	config        PipelineConfig
-	pub           transport.Transport
-	elements      map[string]Element
-	elementLock   sync.RWMutex
-	elementChans  map[string]chan *samples.Sample
-	sampleBuilder *samples.Builder
-	stop          bool
-	liveTime      time.Time
+	builder      *samples.Builder
+	elements     map[string]Element
+	elementLock  sync.RWMutex
+	elementChans map[string]chan *samples.Sample
+	stop         bool
 }
 
 // NewPipeline return a new Pipeline
-func NewPipeline(id string, config PipelineConfig, pub transport.Transport) *Pipeline {
-	log.Infof("NewPipeline id=%s", id)
+func NewPipeline(track *webrtc.Track) *Pipeline {
+	log.Infof("NewPipeline for track ssrc: %d", track.SSRC())
+
 	p := &Pipeline{
-		config:        config,
-		pub:           pub,
-		elements:      config.GetDefaultElements(id),
-		elementChans:  make(map[string]chan *samples.Sample),
-		sampleBuilder: samples.NewBuilder(config.SampleBuilder),
-		liveTime:      time.Now().Add(liveCycle),
+		builder:      samples.NewBuilder(track, 200),
+		elements:     make(map[string]Element),
+		elementChans: make(map[string]chan *samples.Sample),
 	}
 
-	p.start()
+	go p.start()
 
 	return p
 }
 
 func (p *Pipeline) start() {
-	go func() {
-		for {
-			if p.stop {
-				return
-			}
-
-			pkt, err := p.pub.ReadRTP()
-			if err != nil {
-				log.Errorf("p.pub.ReadRTP err=%v", err)
-				continue
-			}
-			p.liveTime = time.Now().Add(liveCycle)
-			err = p.sampleBuilder.WriteRTP(pkt)
-			if err != nil {
-				log.Errorf("p.sampleBuilder.WriteRTP err=%v", err)
-				continue
-			}
+	for {
+		if p.stop {
+			return
 		}
-	}()
 
-	go func() {
-		for {
-			if p.stop {
-				return
-			}
+		sample := p.builder.Read()
 
-			sample := p.sampleBuilder.Read()
-
-			p.elementLock.RLock()
-			// Push to client send queues
-			for _, element := range p.elements {
-				go func(element Element) {
-					err := element.Write(sample)
-					if err != nil {
-						log.Errorf("element.Write err=%v", err)
-					}
-				}(element)
-			}
-			p.elementLock.RUnlock()
+		p.elementLock.RLock()
+		// Push to client send queues
+		for _, element := range p.elements {
+			go func(element Element) {
+				err := element.Write(sample)
+				if err != nil {
+					log.Errorf("element.Write err=%v", err)
+				}
+			}(element)
 		}
-	}()
+		p.elementLock.RUnlock()
+	}
 }
 
 // AddElement add a element to pipeline
-func (p *Pipeline) AddElement(e *avp.Element) {
-	if p.elements[e.Type] != nil {
-		log.Errorf("Pipeline.AddElement element %s already exists.", e.Type)
-		return
+func (p *Pipeline) AddElement(e Element) error {
+	if p.elements[e.Type()] != nil {
+		return errors.New("element already exists")
 	}
-	element, err := p.config.GetTogglableElement(e)
-	if err != nil {
-		log.Errorf("GetTogglableElement error => %s", err)
-		return
-	}
+
 	p.elementLock.Lock()
 	defer p.elementLock.Unlock()
-	p.elements[e.Type] = element
-	p.elementChans[e.Type] = make(chan *samples.Sample, 100)
-	log.Infof("Pipeline.AddElement type=%s", e.Type)
-}
-
-// GetElement get a node by id
-func (p *Pipeline) GetElement(id string) Element {
-	p.elementLock.RLock()
-	defer p.elementLock.RUnlock()
-	return p.elements[id]
+	p.elements[e.Type()] = e
+	p.elementChans[e.Type()] = make(chan *samples.Sample, 100)
+	log.Infof("Pipeline.AddElement type=%s", e.Type())
+	return nil
 }
 
 // DelElement del node by id
@@ -156,26 +103,12 @@ func (p *Pipeline) delElements() {
 	}
 }
 
-func (p *Pipeline) delPub() {
-	if p.pub != nil {
-		p.pub.Close()
-	}
-	p.sampleBuilder.Stop()
-	p.pub = nil
-}
-
 // Close release all
 func (p *Pipeline) Close() {
 	if p.stop {
 		return
 	}
 	log.Infof("Pipeline.Close")
-	p.delPub()
 	p.stop = true
 	p.delElements()
-}
-
-// Alive return router status
-func (p *Pipeline) Alive() bool {
-	return p.liveTime.After(time.Now())
 }

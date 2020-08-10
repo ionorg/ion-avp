@@ -6,8 +6,8 @@ import (
 	"github.com/pion/ion-avp/pkg/log"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
-	"github.com/pion/webrtc/v2"
-	"github.com/pion/webrtc/v2/pkg/media/samplebuilder"
+	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v3/pkg/media/samplebuilder"
 )
 
 const (
@@ -19,101 +19,87 @@ var (
 	ErrCodecNotSupported = errors.New("codec not supported")
 )
 
-// BuilderConfig .
-type BuilderConfig struct {
-	ID           string
-	On           bool
-	AudioMaxLate uint16
-	VideoMaxLate uint16
-}
-
 // Builder Module for building video/audio samples from rtp streams
 type Builder struct {
-	id                           string
-	stop                         bool
-	audioBuilder, videoBuilder   *samplebuilder.SampleBuilder
-	audioSequence, videoSequence uint16
-	outChan                      chan *Sample
+	stop     bool
+	builder  *samplebuilder.SampleBuilder
+	sequence uint16
+	track    *webrtc.Track
+	outChan  chan *Sample
 }
 
-// NewBuilder Initialize a new sample builder
-func NewBuilder(config BuilderConfig) *Builder {
-	log.Infof("NewBuilder with config %+v", config)
-	s := &Builder{
-		id:           config.ID,
-		audioBuilder: samplebuilder.New(config.AudioMaxLate, &codecs.OpusPacket{}),
-		videoBuilder: samplebuilder.New(config.VideoMaxLate, &codecs.VP8Packet{}),
-		outChan:      make(chan *Sample, maxSize),
+// NewBuilder Initialize a new audio sample builder
+func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
+	var depacketizer rtp.Depacketizer
+	var checker rtp.PartitionHeadChecker
+	switch track.Codec().Name {
+	case webrtc.Opus:
+		depacketizer = &codecs.OpusPacket{}
+		checker = &codecs.OpusPartitionHeadChecker{}
+	case webrtc.VP8:
+		depacketizer = &codecs.VP8Packet{}
+		checker = &codecs.VP8PartitionHeadChecker{}
+	case webrtc.VP9:
+		depacketizer = &codecs.VP9Packet{}
+		checker = &codecs.VP9PartitionHeadChecker{}
+	case webrtc.H264:
+		depacketizer = &codecs.H264Packet{}
 	}
 
-	samplebuilder.WithPartitionHeadChecker(&codecs.OpusPartitionHeadChecker{})(s.audioBuilder)
-	samplebuilder.WithPartitionHeadChecker(&codecs.VP8PartitionHeadChecker{})(s.videoBuilder)
-
-	return s
-}
-
-// ID Builder id
-func (s *Builder) ID() string {
-	return s.id
-}
-
-// WriteRTP Write RTP packet to Builder
-func (s *Builder) WriteRTP(pkt *rtp.Packet) error {
-	if pkt.PayloadType == webrtc.DefaultPayloadTypeVP8 {
-		s.pushVP8(pkt)
-		return nil
-	} else if pkt.PayloadType == webrtc.DefaultPayloadTypeOpus {
-		s.pushOpus(pkt)
-		return nil
+	b := &Builder{
+		builder: samplebuilder.New(maxLate, depacketizer),
+		outChan: make(chan *Sample, maxSize),
 	}
-	return ErrCodecNotSupported
+
+	if checker != nil {
+		samplebuilder.WithPartitionHeadChecker(checker)(b.builder)
+	}
+
+	go b.start()
+
+	return b
+}
+
+func (b *Builder) start() {
+	for {
+		if b.stop {
+			return
+		}
+
+		pkt, err := b.track.ReadRTP()
+		if err != nil {
+			log.Errorf("Error reading track rtp %s", err)
+			continue
+		}
+
+		b.builder.Push(pkt)
+
+		for {
+			sample, timestamp := b.builder.PopWithTimestamp()
+			if sample == nil {
+				return
+			}
+			b.outChan <- &Sample{
+				Type:           int(b.track.Codec().Type),
+				SequenceNumber: b.sequence,
+				Timestamp:      timestamp,
+				Payload:        sample.Data,
+			}
+			b.sequence++
+		}
+	}
+
 }
 
 // Read sample
-func (s *Builder) Read() *Sample {
-	return <-s.outChan
+func (b *Builder) Read() *Sample {
+	return <-b.outChan
 }
 
 // Stop stop all buffer
-func (s *Builder) Stop() {
-	if s.stop {
+func (b *Builder) Stop() {
+	if b.stop {
 		return
 	}
-	s.stop = true
-}
-
-func (s *Builder) pushOpus(pkt *rtp.Packet) {
-	s.audioBuilder.Push(pkt)
-
-	for {
-		sample, timestamp := s.audioBuilder.PopWithTimestamp()
-		if sample == nil {
-			return
-		}
-		s.outChan <- &Sample{
-			Type:           TypeOpus,
-			SequenceNumber: s.audioSequence,
-			Timestamp:      timestamp,
-			Payload:        sample.Data,
-		}
-		s.audioSequence++
-	}
-}
-
-func (s *Builder) pushVP8(pkt *rtp.Packet) {
-	s.videoBuilder.Push(pkt)
-	for {
-		sample, timestamp := s.videoBuilder.PopWithTimestamp()
-		if sample == nil {
-			return
-		}
-
-		s.outChan <- &Sample{
-			Type:           TypeVP8,
-			SequenceNumber: s.videoSequence,
-			Timestamp:      timestamp,
-			Payload:        sample.Data,
-		}
-		s.videoSequence++
-	}
+	b.stop = true
 }

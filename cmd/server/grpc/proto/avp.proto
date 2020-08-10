@@ -5,21 +5,35 @@ option go_package = "github.com/pion/ion-avp/cmd/server/grpc/proto";
 package avp;
 
 service AVP {
-    rpc StartProcess(StartProcessRequest) returns (StartProcessReply) {}
-    rpc StopProcess(StopProcessRequest) returns (StopProcessReply) {}
+    rpc Signal(stream SignalRequest) returns (stream SignalReply) {}
 }
 
-message StartProcessRequest {
-    Element element = 1;
+message SignalRequest {
+    oneof payload {
+        JoinRequest join = 1;
+        Element element = 2;
+    }
 }
-message StartProcessReply {}
-message StopProcessRequest {}
-message StopProcessReply {}
+
+message SignalReply {
+    oneof payload {
+        JoinReply join = 1;
+    }
+}
+
+message JoinRequest {
+    string sfu = 1;
+    string sid = 2;
+}
+
+message JoinReply {
+    string sid = 1;
+}
 
 // Element describes an a/v process
 message Element {
-    string mid = 1;
-    string rid = 2;
+    string sid = 1;
+    uint32 ssrc = 2;
     string type = 3;
     bytes config = 4;
 }
