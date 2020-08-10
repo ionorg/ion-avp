@@ -1,6 +1,6 @@
 [grpc]
 # internet ip
-port = ":50051"
+port = ":50052"
 
 [pipeline.samplebuilder]
 # max late for audio rtp packets
@@ -9,17 +9,8 @@ audiomaxlate = 100
 videomaxlate = 200
 
 [pipeline.webmsaver]
-enabled = true
-togglable = true
-defaulton = true
 # webm output path
 path = "./out/"
 
-[rtp]
-# listen port
-port = 6668
-
-# kcpkey = ""
-# kcpsalt = ""
 [log]
 level = "info"

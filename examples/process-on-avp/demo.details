@@ -1,0 +1,5 @@
+---
+ name: process-on-avp
+ description: Example of how to process a stream on an avp
+ authors:
+   - Tarrence van As
