@@ -2,10 +2,6 @@ package avp
 
 import "github.com/pion/ion-avp/pkg/log"
 
-type grpc struct {
-	Port string `mapstructure:"port"`
-}
-
 type samplebuilder struct {
 	AudioMaxLate uint16 `mapstructure:"audiomaxlate"`
 	VideoMaxLate uint16 `mapstructure:"videomaxlate"`
@@ -24,7 +20,6 @@ type webmsaver struct {
 
 // Config for base AVP
 type Config struct {
-	GRPC          grpc          `mapstructure:"grpc"`
 	Pipeline      pipeline      `mapstructure:"pipeline"`
 	Log           log.Config    `mapstructure:"log"`
 	SampleBuilder samplebuilder `mapstructure:"samplebuilder"`

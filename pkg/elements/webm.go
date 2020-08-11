@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	// TypeWebmSaver .
-	TypeWebmSaver = "WebmSaver"
+	// IDWebmSaver .
+	IDWebmSaver = "WebmSaver"
 )
 
 // WebmSaverConfig .
@@ -34,9 +34,9 @@ func NewWebmSaver(config WebmSaverConfig) *WebmSaver {
 	}
 }
 
-// Type of element
-func (s *WebmSaver) Type() string {
-	return TypeWebmSaver
+// ID of element
+func (s *WebmSaver) ID() string {
+	return IDWebmSaver
 }
 
 // Write sample to webmsaver
@@ -161,9 +161,9 @@ func NewSampleWriter() *SampleWriter {
 
 // Attach a child element
 func (w *SampleWriter) Attach(e avp.Element) error {
-	if w.childElements[e.Type()] == nil {
-		log.Infof("Transcribe.Attach element => %s", e.Type())
-		w.childElements[e.Type()] = e
+	if w.childElements[e.ID()] == nil {
+		log.Infof("Transcribe.Attach element => %s", e.ID())
+		w.childElements[e.ID()] = e
 		return nil
 	}
 	return ErrElementAlreadyAttached

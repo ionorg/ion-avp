@@ -6,7 +6,7 @@ import (
 
 // Element interface
 type Element interface {
-	Type() string
+	ID() string
 	Write(*samples.Sample) error
 	Attach(Element) error
 	Read() <-chan *samples.Sample

@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	// TypeFileWriter .
-	TypeFileWriter = "FileWriter"
+	// IDFileWriter .
+	IDFileWriter = "FileWriter"
 )
 
 // FileWriterConfig .
@@ -34,7 +34,8 @@ func NewFileWriter(config FileWriterConfig) *FileWriter {
 	f, err := os.OpenFile(config.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 
 	if err != nil {
-		panic(err)
+		log.Errorf("error initializing filewriter: %s", err)
+		return nil
 	}
 
 	w.file = f
@@ -44,9 +45,9 @@ func NewFileWriter(config FileWriterConfig) *FileWriter {
 	return w
 }
 
-// Type for FileWriter
-func (w *FileWriter) Type() string {
-	return TypeFileWriter
+// ID for FileWriter
+func (w *FileWriter) ID() string {
+	return IDFileWriter
 }
 
 func (w *FileWriter) Write(sample *samples.Sample) error {
