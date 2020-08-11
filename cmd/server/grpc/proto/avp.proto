@@ -11,7 +11,7 @@ service AVP {
 message SignalRequest {
     oneof payload {
         JoinRequest join = 1;
-        Element element = 2;
+        Process process = 2;
     }
 }
 
@@ -30,10 +30,11 @@ message JoinReply {
     string sid = 1;
 }
 
-// Element describes an a/v process
-message Element {
-    string sid = 1;
-    uint32 ssrc = 2;
-    string type = 3;
-    bytes config = 4;
+// Process describes an a/v process
+message Process {
+    string pid = 1;      // pipeline id
+    string sid = 2;      // session id
+    string tid = 3;      // track id
+    string eid = 4;      // element id
+    bytes config = 5;
 }

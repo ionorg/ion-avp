@@ -3,18 +3,16 @@ GO_VERSION = 1.14
 GO_TESTPKGS:=$(shell go list ./... | grep -v cmd | grep -v conf | grep -v node)
 GO_COVERPKGS:=$(shell echo $(GO_TESTPKGS) | paste -s -d ',')
 
-all: nodes
-
 go_deps:
 	go mod download
 
 clean:
 	rm -rf bin
 
-nodes: go_deps
-	go build -o bin/avp $(GO_LDFLAGS) cmd/server/grpc/main.go
+build: go_deps
+	go build -o bin/avp $(GO_LDFLAGS) examples/save-to-webm/server/main.go
 
-test: nodes
+test: go_deps
 	go test \
 		-coverpkg=${GO_COVERPKGS} -coverprofile=cover.out -covermode=atomic \
 		-v -race ${GO_TESTPKGS}

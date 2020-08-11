@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/pion/ion-avp/pkg/log"
+	"github.com/pion/ion-avp/pkg/samples"
 
 	"github.com/pion/webrtc/v3"
 )
@@ -14,7 +15,9 @@ type WebRTCTransport struct {
 	id        string
 	pc        *webrtc.PeerConnection
 	mu        sync.RWMutex
-	pipelines map[uint32]*Pipeline
+	builders  map[string]*samples.Builder
+	pending   map[string]string
+	pipelines map[string]*Pipeline
 }
 
 // NewWebRTCTransport creates a new webrtc transport
@@ -39,14 +42,20 @@ func NewWebRTCTransport(id string, config Config) *WebRTCTransport {
 	t := &WebRTCTransport{
 		id:        id,
 		pc:        pc,
-		pipelines: make(map[uint32]*Pipeline),
+		builders:  make(map[string]*samples.Builder),
+		pending:   make(map[string]string),
+		pipelines: make(map[string]*Pipeline),
 	}
 
 	pc.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver) {
-		log.Infof("Got track ssrc: %d", track.SSRC())
-		pipeline := NewPipeline(track)
+		log.Infof("Got track: %s", track.ID())
+		builder := samples.NewBuilder(track, 200)
 		t.mu.Lock()
-		t.pipelines[track.SSRC()] = pipeline
+		t.builders[track.ID()] = builder
+		if pipeline := t.pending[track.ID()]; pipeline != "" {
+			t.pipelines[pipeline].AddTrack(builder)
+			delete(t.pending, track.ID())
+		}
 		t.mu.Unlock()
 	})
 
@@ -84,25 +93,43 @@ func (t *WebRTCTransport) OnICECandidate(f func(c *webrtc.ICECandidate)) {
 	t.pc.OnICECandidate(f)
 }
 
-// AddElement add a processing element for track
-func (t *WebRTCTransport) AddElement(ssrc uint32, e Element) {
-	log.Infof("WebRTCTransport.AddElement type=%s", e.Type())
+// Process creates a pipeline
+func (t *WebRTCTransport) Process(pid, tid, eid string) {
+	log.Infof("WebRTCTransport.Process id=%s", pid)
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	err := t.pipelines[ssrc].AddElement(e)
-	if err != nil {
-		log.Errorf("WebRTCTransport.AddElement err: %s", err)
+	p := t.pipelines[pid]
+	if p == nil {
+		e := registry.GetElement(eid)
+		p = NewPipeline(e(pid))
+		t.pipelines[pid] = p
 	}
+
+	b := t.builders[tid]
+	if b == nil {
+		log.Debugf("builder not found for track %s. queuing.", tid)
+		t.pending[tid] = pid
+		return
+	}
+
+	p.AddTrack(b)
 }
 
 func (t *WebRTCTransport) stats() string {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	info := fmt.Sprintf("  peer: %s\n", t.id)
-	// for _, router := range t.routers {
-	// 	info += router.stats()
-	// }
+	info := fmt.Sprintf("  session: %s\n", t.id)
+	for _, pipeline := range t.pipelines {
+		info += pipeline.stats()
+	}
+
+	if len(t.pending) > 0 {
+		info += "  pending tracks:\n"
+		for tid, pipeline := range t.pending {
+			info += fmt.Sprintf("    track id: %s for pipeline: %s", tid, pipeline)
+		}
+	}
 
 	return info
 }

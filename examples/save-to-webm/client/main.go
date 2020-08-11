@@ -3,11 +3,13 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"log"
 	"os"
+	"strings"
 
-	avp "github.com/pion/ion-avp/cmd/server/grpc/proto"
+	pb "github.com/pion/ion-avp/cmd/server/grpc/proto"
 	"google.golang.org/grpc"
 )
 
@@ -23,7 +25,7 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := avp.NewAVPClient(conn)
+	c := pb.NewAVPClient(conn)
 
 	sid := os.Args[1]
 	ctx := context.Background()
@@ -33,9 +35,9 @@ func main() {
 		log.Fatalf("Error intializing avp signal stream: %v", err)
 	}
 
-	err = client.Send(&avp.SignalRequest{
-		Payload: &avp.SignalRequest_Join{
-			Join: &avp.JoinRequest{
+	err = client.Send(&pb.SignalRequest{
+		Payload: &pb.SignalRequest_Join{
+			Join: &pb.JoinRequest{
 				Sfu: sfu,
 				Sid: sid,
 			},
@@ -45,6 +47,25 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error sending publish request: %v", err)
 	}
+
+	buf := bufio.NewReader(os.Stdin)
+	log.Print("track id: ")
+	id, err := buf.ReadString('\n')
+	if err != nil {
+		log.Fatalf("error reading ssrc: %s", err)
+	}
+	id = strings.TrimSpace(id)
+
+	err = client.Send(&pb.SignalRequest{
+		Payload: &pb.SignalRequest_Process{
+			Process: &pb.Process{
+				Pid: id,
+				Sid: sid,
+				Tid: id,
+				Eid: "webmsaver",
+			},
+		},
+	})
 
 	select {}
 }

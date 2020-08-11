@@ -61,6 +61,11 @@ func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
 	return b
 }
 
+// Track returns the builders underlying track
+func (b *Builder) Track() *webrtc.Track {
+	return b.track
+}
+
 func (b *Builder) start() {
 	for {
 		if b.stop {
