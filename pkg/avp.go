@@ -59,6 +59,14 @@ func (a *AVP) NewWebRTCTransport(id string, config Config) *WebRTCTransport {
 // Join creates an sfu client and join the session.
 // All tracks will be relayed to the avp.
 func (a *AVP) Join(ctx context.Context, addr, sid string) {
+	a.mu.RLock()
+	if a.transports[sid] != nil {
+		log.Infof("Transport for session already exists")
+		a.mu.RUnlock()
+		return
+	}
+	a.mu.RUnlock()
+
 	log.Infof("Joining sfu: %s session: %s", addr, sid)
 	// Set up a connection to the sfu server.
 	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
