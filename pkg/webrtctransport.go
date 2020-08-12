@@ -101,7 +101,7 @@ func (t *WebRTCTransport) Process(pid, tid, eid string) {
 	p := t.pipelines[pid]
 	if p == nil {
 		e := registry.GetElement(eid)
-		p = NewPipeline(e(pid))
+		p = NewPipeline(e(t.id, pid, tid))
 		t.pipelines[pid] = p
 	}
 
