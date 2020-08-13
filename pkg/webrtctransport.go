@@ -127,7 +127,7 @@ func (t *WebRTCTransport) stats() string {
 	if len(t.pending) > 0 {
 		info += "  pending tracks:\n"
 		for tid, pipeline := range t.pending {
-			info += fmt.Sprintf("    track id: %s for pipeline: %s", tid, pipeline)
+			info += fmt.Sprintf("    track id: %s for pipeline: %s\n", tid, pipeline)
 		}
 	}
 
