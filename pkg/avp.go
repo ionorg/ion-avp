@@ -24,6 +24,7 @@ var registry *Registry
 // AVP represents an avp instance
 type AVP struct {
 	config     Config
+	webrtc     WebRTCTransportConfig
 	transports map[string]*WebRTCTransport
 	mu         sync.RWMutex
 }
@@ -35,12 +36,43 @@ func Init(r *Registry) {
 
 // NewAVP creates a new avp instance
 func NewAVP(c Config) *AVP {
-	log.Init(c.Log.Level)
+	w := WebRTCTransportConfig{
+		configuration: webrtc.Configuration{},
+		setting:       webrtc.SettingEngine{},
+	}
 
 	a := &AVP{
 		config:     c,
 		transports: make(map[string]*WebRTCTransport),
+		webrtc:     w,
 	}
+
+	log.Init(c.Log.Level)
+
+	var icePortStart, icePortEnd uint16
+
+	if len(c.WebRTC.ICEPortRange) == 2 {
+		icePortStart = c.WebRTC.ICEPortRange[0]
+		icePortEnd = c.WebRTC.ICEPortRange[1]
+	}
+
+	if icePortStart != 0 || icePortEnd != 0 {
+		if err := a.webrtc.setting.SetEphemeralUDPPortRange(icePortStart, icePortEnd); err != nil {
+			panic(err)
+		}
+	}
+
+	var iceServers []webrtc.ICEServer
+	for _, iceServer := range c.WebRTC.ICEServers {
+		s := webrtc.ICEServer{
+			URLs:       iceServer.URLs,
+			Username:   iceServer.Username,
+			Credential: iceServer.Credential,
+		}
+		iceServers = append(iceServers, s)
+	}
+
+	a.webrtc.configuration.ICEServers = iceServers
 
 	go a.stats()
 
@@ -48,8 +80,8 @@ func NewAVP(c Config) *AVP {
 }
 
 // NewWebRTCTransport creates a new webrtctransport for a session
-func (a *AVP) NewWebRTCTransport(id string, config Config) *WebRTCTransport {
-	t := NewWebRTCTransport(id, config)
+func (a *AVP) NewWebRTCTransport(id string) *WebRTCTransport {
+	t := NewWebRTCTransport(id, a.webrtc)
 	a.mu.Lock()
 	a.transports[id] = t
 	a.mu.Unlock()
@@ -83,7 +115,7 @@ func (a *AVP) Join(ctx context.Context, addr, sid string) {
 		return
 	}
 
-	t := a.NewWebRTCTransport(sid, a.config)
+	t := a.NewWebRTCTransport(sid)
 
 	offer, err := t.CreateOffer()
 	if err != nil {

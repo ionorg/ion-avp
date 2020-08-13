@@ -10,6 +10,12 @@ import (
 	"github.com/pion/webrtc/v3"
 )
 
+// WebRTCTransportConfig represents configuration options
+type WebRTCTransportConfig struct {
+	configuration webrtc.Configuration
+	setting       webrtc.SettingEngine
+}
+
 // WebRTCTransport represents a webrtc transport
 type WebRTCTransport struct {
 	id        string
@@ -21,18 +27,12 @@ type WebRTCTransport struct {
 }
 
 // NewWebRTCTransport creates a new webrtc transport
-func NewWebRTCTransport(id string, config Config) *WebRTCTransport {
+func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
 	// Create peer connection
 	me := webrtc.MediaEngine{}
 	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
-	pc, err := api.NewPeerConnection(webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{
-				URLs: []string{"stun:stun.l.google.com:19302"},
-			},
-		},
-	})
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(me), webrtc.WithSettingEngine(cfg.setting))
+	pc, err := api.NewPeerConnection(cfg.configuration)
 
 	if err != nil {
 		log.Errorf("Error creating peer connection: %s", err)
