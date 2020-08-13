@@ -57,11 +57,8 @@ func (s *server) Signal(stream pb.AVP_SignalServer) error {
 		}
 
 		switch payload := in.Payload.(type) {
-		case *pb.SignalRequest_Join:
-			go s.avp.Join(stream.Context(), payload.Join.Sfu, payload.Join.Sid)
-
 		case *pb.SignalRequest_Process:
-			s.avp.Process(payload.Process.Pid, payload.Process.Sid, payload.Process.Tid, payload.Process.Eid)
+			s.avp.Process(stream.Context(), payload.Process.Sfu, payload.Process.Pid, payload.Process.Sid, payload.Process.Tid, payload.Process.Eid)
 		}
 	}
 }

@@ -10,31 +10,18 @@ service AVP {
 
 message SignalRequest {
     oneof payload {
-        JoinRequest join = 1;
-        Process process = 2;
+        Process process = 1;
     }
 }
 
-message SignalReply {
-    oneof payload {
-        JoinReply join = 1;
-    }
-}
-
-message JoinRequest {
-    string sfu = 1;
-    string sid = 2;
-}
-
-message JoinReply {
-    string sid = 1;
-}
+message SignalReply {}
 
 // Process describes an a/v process
 message Process {
-    string pid = 1;      // pipeline id
-    string sid = 2;      // session id
-    string tid = 3;      // track id
-    string eid = 4;      // element id
-    bytes config = 5;
+    string sfu = 1;      // media sfu
+    string pid = 2;      // pipeline id
+    string sid = 3;      // session id
+    string tid = 4;      // track id
+    string eid = 5;      // element id
+    bytes config = 6;
 }

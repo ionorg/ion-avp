@@ -35,19 +35,6 @@ func main() {
 		log.Fatalf("Error intializing avp signal stream: %v", err)
 	}
 
-	err = client.Send(&pb.SignalRequest{
-		Payload: &pb.SignalRequest_Join{
-			Join: &pb.JoinRequest{
-				Sfu: sfu,
-				Sid: sid,
-			},
-		},
-	})
-
-	if err != nil {
-		log.Fatalf("Error sending publish request: %v", err)
-	}
-
 	buf := bufio.NewReader(os.Stdin)
 	log.Print("track id: ")
 	id, err := buf.ReadString('\n')
@@ -59,6 +46,7 @@ func main() {
 	err = client.Send(&pb.SignalRequest{
 		Payload: &pb.SignalRequest_Process{
 			Process: &pb.Process{
+				Sfu: sfu,
 				Pid: id,
 				Sid: sid,
 				Tid: id,
