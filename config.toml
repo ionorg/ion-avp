@@ -10,3 +10,15 @@ path = "./out/"
 
 [log]
 level = "info"
+
+[webrtc]
+# Range of ports that ion accepts WebRTC traffic on
+# Format: [min, max]   and max - min >= 100
+# portrange = [50000, 60000]
+# if sfu behind nat, set iceserver
+# [[webrtc.iceserver]]
+# urls = ["stun:stun.stunprotocol.org:3478"]
+# [[webrtc.iceserver]]
+# urls = ["turn:turn.awsome.org:3478"]
+# username = "awsome"
+# credential = "awsome"
