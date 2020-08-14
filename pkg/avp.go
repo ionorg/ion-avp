@@ -271,11 +271,6 @@ func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string) {
 		a.transports[sid] = t
 	}
 
-	e := registry.GetElement(eid)
-	if e == nil {
-		log.Errorf("process err: element not found")
-		return
-	}
 	t.Process(pid, tid, eid)
 }
 

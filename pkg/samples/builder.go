@@ -58,7 +58,7 @@ func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
 		samplebuilder.WithPartitionHeadChecker(checker)(b.builder)
 	}
 
-	b.start()
+	go b.start()
 
 	return b
 }
@@ -70,40 +70,28 @@ func (b *Builder) Track() *webrtc.Track {
 
 func (b *Builder) start() {
 	log.Debugf("Reading rtp for track: %s", b.Track().ID())
-	go func() {
-		for {
-			b.mu.RLock()
-			stop := b.stop
-			b.mu.RUnlock()
-			if stop {
-				return
-			}
-
-			log.Tracef("Read rtp from track: %s", b.Track().ID())
-			pkt, err := b.track.ReadRTP()
-			log.Tracef("Got rtp from track: %s pkt: %v", b.Track().ID(), pkt)
-			if err != nil {
-				log.Errorf("Error reading track rtp %s", err)
-				continue
-			}
-
-			b.builder.Push(pkt)
+	for {
+		b.mu.RLock()
+		stop := b.stop
+		b.mu.RUnlock()
+		if stop {
+			return
 		}
-	}()
 
-	go func() {
+		pkt, err := b.track.ReadRTP()
+		if err != nil {
+			log.Errorf("Error reading track rtp %s", err)
+			continue
+		}
+
+		b.builder.Push(pkt)
+
 		for {
-			b.mu.RLock()
-			stop := b.stop
-			b.mu.RUnlock()
-			if stop {
-				return
-			}
 			log.Tracef("Read sample from builder: %s", b.Track().ID())
 			sample, timestamp := b.builder.PopWithTimestamp()
 			log.Tracef("Got sample from builder: %s sample: %v", b.Track().ID(), sample)
 			if sample == nil {
-				return
+				break
 			}
 			b.outChan <- &Sample{
 				Type:           int(b.track.Codec().Type),
@@ -113,7 +101,7 @@ func (b *Builder) start() {
 			}
 			b.sequence++
 		}
-	}()
+	}
 }
 
 // Read sample
