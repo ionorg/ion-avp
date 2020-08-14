@@ -2,6 +2,7 @@ package samples
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/pion/ion-avp/pkg/log"
 	"github.com/pion/rtp"
@@ -21,6 +22,7 @@ var (
 
 // Builder Module for building video/audio samples from rtp streams
 type Builder struct {
+	mu       sync.RWMutex
 	stop     bool
 	builder  *samplebuilder.SampleBuilder
 	sequence uint16
@@ -56,7 +58,7 @@ func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
 		samplebuilder.WithPartitionHeadChecker(checker)(b.builder)
 	}
 
-	go b.start()
+	b.start()
 
 	return b
 }
@@ -67,20 +69,34 @@ func (b *Builder) Track() *webrtc.Track {
 }
 
 func (b *Builder) start() {
-	for {
-		if b.stop {
-			return
-		}
-
-		pkt, err := b.track.ReadRTP()
-		if err != nil {
-			log.Errorf("Error reading track rtp %s", err)
-			continue
-		}
-
-		b.builder.Push(pkt)
-
+	log.Debugf("Reading rtp for track: %s", b.Track().ID())
+	go func() {
 		for {
+			b.mu.RLock()
+			stop := b.stop
+			b.mu.RUnlock()
+			if stop {
+				return
+			}
+
+			pkt, err := b.track.ReadRTP()
+			if err != nil {
+				log.Errorf("Error reading track rtp %s", err)
+				continue
+			}
+
+			b.builder.Push(pkt)
+		}
+	}()
+
+	go func() {
+		for {
+			b.mu.RLock()
+			stop := b.stop
+			b.mu.RUnlock()
+			if stop {
+				return
+			}
 			sample, timestamp := b.builder.PopWithTimestamp()
 			if sample == nil {
 				return
@@ -93,8 +109,7 @@ func (b *Builder) start() {
 			}
 			b.sequence++
 		}
-	}
-
+	}()
 }
 
 // Read sample
@@ -104,6 +119,8 @@ func (b *Builder) Read() *Sample {
 
 // Stop stop all buffer
 func (b *Builder) Stop() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	if b.stop {
 		return
 	}

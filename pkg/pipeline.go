@@ -33,15 +33,17 @@ func NewPipeline(e Element) *Pipeline {
 }
 
 func (p *Pipeline) start(builder *samples.Builder) {
+	log.Debugf("Reading sample builder for track: %s", builder.Track().ID())
 	for {
 		p.mu.RLock()
-		if p.stop {
-			p.mu.RUnlock()
+		stop := p.stop
+		p.mu.RUnlock()
+		if stop {
 			return
 		}
-		p.mu.RUnlock()
 
 		sample := builder.Read()
+		log.Tracef("Got sample from builder: %s sample: %v", builder.Track().ID(), sample)
 		err := p.element.Write(sample)
 		if err != nil {
 			log.Errorf("error writing sample: %s", err)
@@ -68,6 +70,8 @@ func (p *Pipeline) Stop() {
 }
 
 func (p *Pipeline) stats() string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	info := fmt.Sprintf("    element: %s\n", p.element.ID())
 	for id := range p.builders {
 		info += fmt.Sprintf("      track id: %s", id)
