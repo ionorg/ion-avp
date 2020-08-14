@@ -51,7 +51,7 @@ func (w *FileWriter) ID() string {
 }
 
 func (w *FileWriter) Write(sample *samples.Sample) error {
-	_, err := w.file.Write(sample.Payload)
+	_, err := w.file.Write(sample.Payload.([]byte))
 	return err
 }
 

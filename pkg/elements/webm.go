@@ -79,19 +79,20 @@ func (s *WebmSaver) pushOpus(sample *samples.Sample) {
 			s.audioTimestamp = sample.Timestamp
 		}
 		t := (sample.Timestamp - s.audioTimestamp) / 48
-		if _, err := s.audioWriter.Write(true, int64(t), sample.Payload); err != nil {
+		if _, err := s.audioWriter.Write(true, int64(t), sample.Payload.([]byte)); err != nil {
 			panic(err)
 		}
 	}
 }
 
 func (s *WebmSaver) pushVP8(sample *samples.Sample) {
+	payload := sample.Payload.([]byte)
 	// Read VP8 header.
-	videoKeyframe := (sample.Payload[0]&0x1 == 0)
+	videoKeyframe := (payload[0]&0x1 == 0)
 
 	if videoKeyframe {
 		// Keyframe has frame information.
-		raw := uint(sample.Payload[6]) | uint(sample.Payload[7])<<8 | uint(sample.Payload[8])<<16 | uint(sample.Payload[9])<<24
+		raw := uint(payload[6]) | uint(payload[7])<<8 | uint(payload[8])<<16 | uint(payload[9])<<24
 		width := int(raw & 0x3FFF)
 		height := int((raw >> 16) & 0x3FFF)
 
@@ -106,7 +107,7 @@ func (s *WebmSaver) pushVP8(sample *samples.Sample) {
 			s.videoTimestamp = sample.Timestamp
 		}
 		t := (sample.Timestamp - s.videoTimestamp) / 90
-		if _, err := s.videoWriter.Write(videoKeyframe, int64(t), sample.Payload); err != nil {
+		if _, err := s.videoWriter.Write(videoKeyframe, int64(t), payload); err != nil {
 			panic(err)
 		}
 	}

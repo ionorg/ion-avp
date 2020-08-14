@@ -13,6 +13,5 @@ type Sample struct {
 	Type           int
 	Timestamp      uint32
 	SequenceNumber uint16
-	Properties     map[string]interface{}
-	Payload        []byte
+	Payload        interface{}
 }
