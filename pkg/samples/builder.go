@@ -79,7 +79,9 @@ func (b *Builder) start() {
 				return
 			}
 
+			log.Tracef("Read rtp from track: %s", b.Track().ID())
 			pkt, err := b.track.ReadRTP()
+			log.Tracef("Got rtp from track: %s pkt: %v", b.Track().ID(), pkt)
 			if err != nil {
 				log.Errorf("Error reading track rtp %s", err)
 				continue
@@ -97,7 +99,9 @@ func (b *Builder) start() {
 			if stop {
 				return
 			}
+			log.Tracef("Read sample from builder: %s", b.Track().ID())
 			sample, timestamp := b.builder.PopWithTimestamp()
+			log.Tracef("Got sample from builder: %s sample: %v", b.Track().ID(), sample)
 			if sample == nil {
 				return
 			}

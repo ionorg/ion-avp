@@ -42,6 +42,7 @@ func (p *Pipeline) start(builder *samples.Builder) {
 			return
 		}
 
+		log.Tracef("Read sample from builder: %s", builder.Track().ID())
 		sample := builder.Read()
 		log.Tracef("Got sample from builder: %s sample: %v", builder.Track().ID(), sample)
 		err := p.element.Write(sample)
