@@ -9,7 +9,7 @@ require (
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pion/ion-sfu v1.0.3
 	github.com/pion/rtp v1.6.0
-	github.com/pion/webrtc/v3 v3.0.0-20200722224412-9d3c067b1ab7
+	github.com/pion/webrtc/v3 v3.0.0-beta.2
 	github.com/rs/zerolog v1.19.0
 	github.com/spf13/viper v1.7.1
 	google.golang.org/grpc v1.27.1
