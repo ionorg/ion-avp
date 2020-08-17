@@ -1,21 +1,12 @@
-# process-on-avp
-process-on-avp demonstrates how to process media with an avp. in this example, the media is pubished to ion-sfu from a file on disk.
+# save-to-webm
+save-to-webm demonstrates how to process media with an `avp`. in this example, the media is relayed from `ion-sfu`, buffered and sequenced on the avp, and written to a webm file on disk.
 
 ## Instructions
-### Create IVF named `output.ivf` that contains a VP8 track and/or `output.ogg` that contains a Opus track
-```
-ffmpeg -i $INPUT_FILE -g 30 output.ivf
-ffmpeg -i $INPUT_FILE -c:a libopus -page_duration 20000 -vn output.ogg
-```
 
-### Download process-on-avp
-```
-go get github.com/pion/ion-sfu/examples/process-on-avp
-```
+### Start avp server
+Run `go run examples/save-to-webm/server/main.go`. This will start an avp instance that will process media tracks.
 
-### Run process-on-avp
-The `output.ivf` you created should be in the same directory as `process-on-avp`.
+### Start avp client
+Run `go run examples/save-to-webm/client/main.go $SESSION_ID`. This will initiate a webrtc transport from avp to sfu for the given session. Tracks will start being relayed. When prompted, enter a track id to create a `WebmSaver` element which will start writing the track data to disk.
 
-Run `process-on-avp $yourroom < my_file`
-
-Congrats, you are now publishing video to the ion-sfu! Now start building something cool!
+Congrats, you are now processing media with the ion-avp! Now start building something cool!
