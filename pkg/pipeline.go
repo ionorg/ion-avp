@@ -2,6 +2,7 @@ package avp
 
 import (
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/pion/ion-avp/pkg/log"
@@ -43,9 +44,13 @@ func (p *Pipeline) start(builder *samples.Builder) {
 		}
 
 		log.Tracef("Read sample from builder: %s", builder.Track().ID())
-		sample := builder.Read()
+		sample, err := builder.Read()
+		if err == io.EOF {
+			p.Stop()
+			return
+		}
 		log.Tracef("Got sample from builder: %s sample: %v", builder.Track().ID(), sample)
-		err := p.element.Write(sample)
+		err = p.element.Write(sample)
 		if err != nil {
 			log.Errorf("error writing sample: %s", err)
 		}

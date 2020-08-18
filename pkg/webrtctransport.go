@@ -39,6 +39,12 @@ func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
 		return nil
 	}
 
+	_, err = pc.CreateDataChannel("feedback", nil)
+	if err != nil {
+		log.Errorf("Error creating peer data channel: %s", err)
+		return nil
+	}
+
 	t := &WebRTCTransport{
 		id:        id,
 		pc:        pc,
@@ -47,16 +53,26 @@ func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
 		pipelines: make(map[string]*Pipeline),
 	}
 
-	pc.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver) {
+	pc.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver, streams []*webrtc.Stream) {
 		log.Infof("Got track: %s", track.ID())
 		builder := samples.NewBuilder(track, 200)
 		t.mu.Lock()
+		defer t.mu.Unlock()
 		t.builders[track.ID()] = builder
 		if pipeline := t.pending[track.ID()]; pipeline != "" {
 			t.pipelines[pipeline].AddTrack(builder)
 			delete(t.pending, track.ID())
 		}
-		t.mu.Unlock()
+
+		streams[0].OnRemoveTrack(func(track *webrtc.Track) {
+			t.mu.Lock()
+			defer t.mu.Unlock()
+			b := t.builders[track.ID()]
+			if b != nil {
+				b.Stop()
+				delete(t.builders, track.ID())
+			}
+		})
 	})
 
 	return t

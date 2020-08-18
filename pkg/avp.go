@@ -74,6 +74,8 @@ func NewAVP(c Config) *AVP {
 
 	a.webrtc.configuration.ICEServers = iceServers
 
+	log.Debugf("WebRTC config:\n%v", a.webrtc)
+
 	go a.stats()
 
 	return a
@@ -111,6 +113,7 @@ func (a *AVP) join(ctx context.Context, addr, sid string) *WebRTCTransport {
 		return nil
 	}
 
+	log.Debugf("Send offer:\n %s", offer.SDP)
 	err = sfustream.Send(
 		&sfu.SignalRequest{
 			Payload: &sfu.SignalRequest_Join{

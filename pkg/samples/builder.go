@@ -2,6 +2,7 @@ package samples
 
 import (
 	"errors"
+	"io"
 	"sync"
 
 	"github.com/pion/ion-avp/pkg/log"
@@ -80,6 +81,9 @@ func (b *Builder) start() {
 
 		pkt, err := b.track.ReadRTP()
 		if err != nil {
+			if err == io.EOF {
+				return
+			}
 			log.Errorf("Error reading track rtp %s", err)
 			continue
 		}
@@ -105,8 +109,12 @@ func (b *Builder) start() {
 }
 
 // Read sample
-func (b *Builder) Read() *Sample {
-	return <-b.outChan
+func (b *Builder) Read() (*Sample, error) {
+	sample, ok := <-b.outChan
+	if !ok {
+		return nil, io.EOF
+	}
+	return sample, nil
 }
 
 // Stop stop all buffer
@@ -117,4 +125,5 @@ func (b *Builder) Stop() {
 		return
 	}
 	b.stop = true
+	close(b.outChan)
 }
