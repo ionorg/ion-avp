@@ -12,6 +12,6 @@ require (
 	github.com/pion/webrtc/v3 v3.0.0-beta.2.0.20200817181754-456f46c7b353
 	github.com/rs/zerolog v1.19.0
 	github.com/spf13/viper v1.7.1
-	google.golang.org/grpc v1.27.1
+	google.golang.org/grpc v1.31.1
 	google.golang.org/protobuf v1.23.0
 )
