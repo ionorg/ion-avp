@@ -17,11 +17,12 @@ type WebRTCTransportConfig struct {
 
 // WebRTCTransport represents a webrtc transport
 type WebRTCTransport struct {
-	id       string
-	pc       *webrtc.PeerConnection
-	mu       sync.RWMutex
-	builders map[string]*Builder         // one builder per track
-	pending  map[string][]func() Element // maps track id to pending element constructors
+	id        string
+	pc        *webrtc.PeerConnection
+	mu        sync.RWMutex
+	builders  map[string]*Builder         // one builder per track
+	pending   map[string][]func() Element // maps track id to pending element constructors
+	onCloseFn func()
 }
 
 // NewWebRTCTransport creates a new webrtc transport
@@ -69,17 +70,61 @@ func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
 
 		streams[0].OnRemoveTrack(func(track *webrtc.Track) {
 			t.mu.Lock()
-			defer t.mu.Unlock()
+			id := track.ID()
 			b := t.builders[id]
 			if b != nil {
 				b.Stop()
 				log.Debugf("stop builder %s", id)
 				delete(t.builders, id)
 			}
+
+			if len(t.builders) == 0 && len(t.pending) == 0 {
+				// No more tracks, cleanup transport
+				t.mu.Unlock()
+				t.Close()
+				return
+			}
+			t.mu.Unlock()
 		})
 	})
 
 	return t
+}
+
+// OnClose sets a handler that is called when the webrtc transport is closed
+func (t *WebRTCTransport) OnClose(f func()) {
+	t.onCloseFn = f
+}
+
+// Close the webrtc transport
+func (t *WebRTCTransport) Close() error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for _, builder := range t.builders {
+		builder.Stop()
+	}
+
+	if t.onCloseFn != nil {
+		t.onCloseFn()
+	}
+	return t.pc.Close()
+}
+
+// Process creates a pipeline
+func (t *WebRTCTransport) Process(pid, tid, eid string) {
+	log.Infof("WebRTCTransport.Process id=%s", pid)
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	e := registry.GetElement(eid)
+	b := t.builders[tid]
+	if b == nil {
+		log.Debugf("builder not found for track %s. queuing.", tid)
+		t.pending[tid] = append(t.pending[tid], func() Element { return e(t.id, pid, tid) })
+		return
+	}
+
+	b.AttachElement(e(t.id, pid, tid))
 }
 
 // CreateOffer starts the PeerConnection and generates the localDescription
@@ -111,23 +156,6 @@ func (t *WebRTCTransport) AddICECandidate(candidate webrtc.ICECandidateInit) err
 // Take note that the handler is gonna be called with a nil pointer when gathering is finished.
 func (t *WebRTCTransport) OnICECandidate(f func(c *webrtc.ICECandidate)) {
 	t.pc.OnICECandidate(f)
-}
-
-// Process creates a pipeline
-func (t *WebRTCTransport) Process(pid, tid, eid string) {
-	log.Infof("WebRTCTransport.Process id=%s", pid)
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	e := registry.GetElement(eid)
-	b := t.builders[tid]
-	if b == nil {
-		log.Debugf("builder not found for track %s. queuing.", tid)
-		t.pending[tid] = append(t.pending[tid], func() Element { return e(t.id, pid, tid) })
-		return
-	}
-
-	b.AttachElement(e(t.id, pid, tid))
 }
 
 func (t *WebRTCTransport) stats() string {

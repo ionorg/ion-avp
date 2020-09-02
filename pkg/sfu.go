@@ -17,9 +17,11 @@ import (
 // SFU client
 type SFU struct {
 	ctx        context.Context
+	cancel     context.CancelFunc
 	client     sfu.SFUClient
 	config     WebRTCTransportConfig
 	mu         sync.RWMutex
+	onCloseFn  func()
 	transports map[string]*WebRTCTransport
 }
 
@@ -32,8 +34,11 @@ func NewSFU(addr string, config WebRTCTransportConfig) *SFU {
 		log.Errorf("did not connect: %v", err)
 		return nil
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
 	return &SFU{
-		ctx:        context.Background(),
+		ctx:        ctx,
+		cancel:     cancel,
 		client:     sfu.NewSFUClient(conn),
 		config:     config,
 		transports: make(map[string]*WebRTCTransport),
@@ -42,15 +47,32 @@ func NewSFU(addr string, config WebRTCTransportConfig) *SFU {
 
 // GetTransport returns a webrtc transport for a session
 func (s *SFU) GetTransport(sid string) *WebRTCTransport {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	t := s.transports[sid]
 
 	// no transport yet, create one
 	if t == nil {
 		t = s.join(sid)
+		t.OnClose(func() {
+			s.mu.Lock()
+			defer s.mu.Unlock()
+			delete(s.transports, sid)
+			if len(s.transports) == 0 && s.onCloseFn != nil {
+				s.cancel()
+				s.onCloseFn()
+			}
+		})
 		s.transports[sid] = t
 	}
 
 	return t
+}
+
+// OnClose handler called when sfu client is closed
+func (s *SFU) OnClose(f func()) {
+	s.onCloseFn = f
 }
 
 // Join creates an sfu client and join the session.
@@ -141,7 +163,6 @@ func (s *SFU) join(sid string) *WebRTCTransport {
 					if err != nil {
 						log.Errorf("error sending close: %s", err)
 					}
-					log.Debugf("Ctx canceled")
 					return
 				}
 

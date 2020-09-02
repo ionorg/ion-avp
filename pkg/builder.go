@@ -140,7 +140,10 @@ func (b *Builder) forward() {
 		}
 
 		for _, e := range elements {
-			e.Write(sample)
+			err := e.Write(sample)
+			if err != nil {
+				log.Errorf("error writing sample: %s", err)
+			}
 		}
 	}
 }
@@ -153,5 +156,9 @@ func (b *Builder) Stop() {
 		return
 	}
 	b.stop = true
+	for eid, e := range b.elements {
+		e.Close()
+		delete(b.elements, eid)
+	}
 	close(b.out)
 }

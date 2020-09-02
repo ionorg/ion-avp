@@ -84,6 +84,11 @@ func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string) {
 	// no client yet, create one
 	if c == nil {
 		c = NewSFU(addr, a.webrtc)
+		c.OnClose(func() {
+			a.mu.Lock()
+			defer a.mu.Unlock()
+			delete(a.clients, addr)
+		})
 		a.clients[addr] = c
 	}
 
