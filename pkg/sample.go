@@ -1,4 +1,4 @@
-package samples
+package avp
 
 // Types for samples
 const (

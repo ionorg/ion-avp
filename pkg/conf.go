@@ -2,12 +2,12 @@ package avp
 
 import "github.com/pion/ion-avp/pkg/log"
 
-type samplebuilder struct {
+type samplebuilderconf struct {
 	AudioMaxLate uint16 `mapstructure:"audiomaxlate"`
 	VideoMaxLate uint16 `mapstructure:"videomaxlate"`
 }
 
-type pipeline struct {
+type pipelineconf struct {
 	WebmSaver webmsaver `mapstructure:"webmsaver"`
 }
 
@@ -28,8 +28,8 @@ type webrtcconf struct {
 
 // Config for base AVP
 type Config struct {
-	Log           log.Config    `mapstructure:"log"`
-	Pipeline      pipeline      `mapstructure:"pipeline"`
-	SampleBuilder samplebuilder `mapstructure:"samplebuilder"`
-	WebRTC        webrtcconf    `mapstructure:"webrtc"`
+	Log           log.Config        `mapstructure:"log"`
+	Pipeline      pipelineconf      `mapstructure:"pipeline"`
+	SampleBuilder samplebuilderconf `mapstructure:"samplebuilder"`
+	WebRTC        webrtcconf        `mapstructure:"webrtc"`
 }
