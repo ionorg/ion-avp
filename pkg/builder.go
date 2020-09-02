@@ -1,7 +1,8 @@
-package samples
+package avp
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"sync"
 
@@ -26,9 +27,10 @@ type Builder struct {
 	mu       sync.RWMutex
 	stop     bool
 	builder  *samplebuilder.SampleBuilder
+	elements map[string]Element
 	sequence uint16
 	track    *webrtc.Track
-	outChan  chan *Sample
+	out      chan *Sample
 }
 
 // NewBuilder Initialize a new audio sample builder
@@ -50,18 +52,27 @@ func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
 	}
 
 	b := &Builder{
-		builder: samplebuilder.New(maxLate, depacketizer),
-		track:   track,
-		outChan: make(chan *Sample, maxSize),
+		builder:  samplebuilder.New(maxLate, depacketizer),
+		elements: make(map[string]Element),
+		track:    track,
+		out:      make(chan *Sample, maxSize),
 	}
 
 	if checker != nil {
 		samplebuilder.WithPartitionHeadChecker(checker)(b.builder)
 	}
 
-	go b.start()
+	go b.build()
+	go b.forward()
 
 	return b
+}
+
+// AttachElement attaches a element to a builder
+func (b *Builder) AttachElement(e Element) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.elements[e.ID()] = e
 }
 
 // Track returns the builders underlying track
@@ -69,7 +80,7 @@ func (b *Builder) Track() *webrtc.Track {
 	return b.track
 }
 
-func (b *Builder) start() {
+func (b *Builder) build() {
 	log.Debugf("Reading rtp for track: %s", b.Track().ID())
 	for {
 		b.mu.RLock()
@@ -94,10 +105,18 @@ func (b *Builder) start() {
 			log.Tracef("Read sample from builder: %s", b.Track().ID())
 			sample, timestamp := b.builder.PopWithTimestamp()
 			log.Tracef("Got sample from builder: %s sample: %v", b.Track().ID(), sample)
+
+			b.mu.RLock()
+			stop = b.stop
+			b.mu.RUnlock()
+			if stop {
+				return
+			}
+
 			if sample == nil {
 				break
 			}
-			b.outChan <- &Sample{
+			b.out <- &Sample{
 				Type:           int(b.track.Codec().Type),
 				SequenceNumber: b.sequence,
 				Timestamp:      timestamp,
@@ -109,12 +128,25 @@ func (b *Builder) start() {
 }
 
 // Read sample
-func (b *Builder) Read() (*Sample, error) {
-	sample, ok := <-b.outChan
-	if !ok {
-		return nil, io.EOF
+func (b *Builder) forward() {
+	for {
+		sample := <-b.out
+
+		b.mu.RLock()
+		elements := b.elements
+		stop := b.stop
+		b.mu.RUnlock()
+		if stop {
+			return
+		}
+
+		for _, e := range elements {
+			err := e.Write(sample)
+			if err != nil {
+				log.Errorf("error writing sample: %s", err)
+			}
+		}
 	}
-	return sample, nil
 }
 
 // Stop stop all buffer
@@ -125,5 +157,19 @@ func (b *Builder) Stop() {
 		return
 	}
 	b.stop = true
-	close(b.outChan)
+	for eid, e := range b.elements {
+		e.Close()
+		delete(b.elements, eid)
+	}
+	close(b.out)
+}
+
+func (b *Builder) stats() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	info := fmt.Sprintf("      track: %s\n", b.track.ID())
+	for id := range b.elements {
+		info += fmt.Sprintf("        element: %s\n", id)
+	}
+	return info
 }

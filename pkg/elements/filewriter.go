@@ -5,7 +5,6 @@ import (
 
 	avp "github.com/pion/ion-avp/pkg"
 	"github.com/pion/ion-avp/pkg/log"
-	"github.com/pion/ion-avp/pkg/samples"
 )
 
 const (
@@ -50,12 +49,12 @@ func (w *FileWriter) ID() string {
 	return IDFileWriter
 }
 
-func (w *FileWriter) Write(sample *samples.Sample) error {
+func (w *FileWriter) Write(sample *avp.Sample) error {
 	_, err := w.file.Write(sample.Payload.([]byte))
 	return err
 }
 
-func (w *FileWriter) Read() <-chan *samples.Sample {
+func (w *FileWriter) Read() <-chan *avp.Sample {
 	return nil
 }
 
