@@ -2,6 +2,7 @@ package avp
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"sync"
 
@@ -161,4 +162,14 @@ func (b *Builder) Stop() {
 		delete(b.elements, eid)
 	}
 	close(b.out)
+}
+
+func (b *Builder) stats() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	info := fmt.Sprintf("      track: %s\n", b.track.ID())
+	for id := range b.elements {
+		info += fmt.Sprintf("        element: %s\n", id)
+	}
+	return info
 }

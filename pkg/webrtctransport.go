@@ -162,17 +162,17 @@ func (t *WebRTCTransport) stats() string {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	info := fmt.Sprintf("  session: %s\n", t.id)
-	// for _, pipeline := range t.pipelines {
-	// 	info += pipeline.stats()
-	// }
+	info := fmt.Sprintf("    session: %s\n", t.id)
+	for _, builder := range t.builders {
+		info += builder.stats()
+	}
 
-	// if len(t.pending) > 0 {
-	// 	info += "  pending tracks:\n"
-	// 	for tid, pipeline := range t.pending {
-	// 		info += fmt.Sprintf("    track id: %s for pipeline: %s\n", tid, pipeline)
-	// 	}
-	// }
+	if len(t.pending) > 0 {
+		info += "    pending tracks:\n"
+		for tid := range t.pending {
+			info += fmt.Sprintf("      track id: %s\n", tid)
+		}
+	}
 
 	return info
 }
