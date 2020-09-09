@@ -55,5 +55,9 @@ func main() {
 		},
 	})
 
+	if err != nil {
+		log.Fatalf("error sending signal request: %s", err)
+	}
+
 	select {}
 }
