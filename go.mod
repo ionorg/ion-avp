@@ -10,6 +10,6 @@ require (
 	github.com/pion/webrtc/v3 v3.0.0-beta.4.0.20200908143909-40eb1f2404c0
 	github.com/rs/zerolog v1.19.0
 	github.com/spf13/viper v1.7.1
-	google.golang.org/grpc v1.32.0
+	google.golang.org/grpc v1.27.1
 	google.golang.org/protobuf v1.23.0
 )
