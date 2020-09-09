@@ -150,7 +150,7 @@ func (s *SFU) join(sid string) *WebRTCTransport {
 				if err == io.EOF {
 					// WebRTC Transport closed
 					log.Infof("WebRTC Transport Closed")
-					err := sfustream.CloseSend()
+					err = sfustream.CloseSend()
 					if err != nil {
 						log.Errorf("error sending close: %s", err)
 					}
@@ -159,7 +159,7 @@ func (s *SFU) join(sid string) *WebRTCTransport {
 
 				errStatus, _ := status.FromError(err)
 				if errStatus.Code() == codes.Canceled {
-					err := sfustream.CloseSend()
+					err = sfustream.CloseSend()
 					if err != nil {
 						log.Errorf("error sending close: %s", err)
 					}
@@ -198,7 +198,8 @@ func (s *SFU) join(sid string) *WebRTCTransport {
 						continue
 					}
 
-					answer, err := t.CreateAnswer()
+					var answer webrtc.SessionDescription
+					answer, err = t.CreateAnswer()
 					if err != nil {
 						log.Errorf("negotiate error %s", err)
 						continue
