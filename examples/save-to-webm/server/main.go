@@ -19,7 +19,7 @@ var (
 	addr string
 )
 
-func createWebmSaver(sid, pid, tid string) avp.Element {
+func createWebmSaver(sid, pid, tid string, config []byte) avp.Element {
 	filewriter := elements.NewFileWriter(elements.FileWriterConfig{
 		ID:   pid,
 		Path: path.Join(conf.Pipeline.WebmSaver.Path, fmt.Sprintf("%s-%s.webm", sid, pid)),

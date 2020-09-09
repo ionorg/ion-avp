@@ -57,7 +57,7 @@ func (s *server) Signal(stream pb.AVP_SignalServer) error {
 		}
 
 		if payload, ok := in.Payload.(*pb.SignalRequest_Process); ok {
-			s.avp.Process(stream.Context(), payload.Process.Sfu, payload.Process.Pid, payload.Process.Sid, payload.Process.Tid, payload.Process.Eid)
+			s.avp.Process(stream.Context(), payload.Process.Sfu, payload.Process.Pid, payload.Process.Sid, payload.Process.Tid, payload.Process.Eid, payload.Process.Config)
 		}
 	}
 }

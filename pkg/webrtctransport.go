@@ -111,7 +111,7 @@ func (t *WebRTCTransport) Close() error {
 }
 
 // Process creates a pipeline
-func (t *WebRTCTransport) Process(pid, tid, eid string) {
+func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) {
 	log.Infof("WebRTCTransport.Process id=%s", pid)
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -120,11 +120,11 @@ func (t *WebRTCTransport) Process(pid, tid, eid string) {
 	b := t.builders[tid]
 	if b == nil {
 		log.Debugf("builder not found for track %s. queuing.", tid)
-		t.pending[tid] = append(t.pending[tid], func() Element { return e(t.id, pid, tid) })
+		t.pending[tid] = append(t.pending[tid], func() Element { return e(t.id, pid, tid, config) })
 		return
 	}
 
-	b.AttachElement(e(t.id, pid, tid))
+	b.AttachElement(e(t.id, pid, tid, config))
 }
 
 // CreateOffer starts the PeerConnection and generates the localDescription

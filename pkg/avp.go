@@ -76,7 +76,7 @@ func NewAVP(c Config) *AVP {
 }
 
 // Process starts a process for a track.
-func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string) {
+func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string, config []byte) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -93,7 +93,7 @@ func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string) {
 	}
 
 	t := c.GetTransport(sid)
-	t.Process(pid, tid, eid)
+	t.Process(pid, tid, eid, config)
 }
 
 // show all avp stats
