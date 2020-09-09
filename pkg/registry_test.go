@@ -1,8 +1,9 @@
 package avp
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type elementMock struct{}
@@ -30,12 +31,12 @@ func TestNewRegistry(t *testing.T) {
 	registry := NewRegistry()
 	assert.NotNil(t, registry)
 
-	testFunc := func(sid, pid, tid string) Element {
+	testFunc := func(sid, pid, tid string, config []byte) Element {
 		return &elementMock{}
 	}
 
 	registry.AddElement("test", testFunc)
 	expectedElement := registry.GetElement("test")
 
-	assert.Equal(t, expectedElement("1", "2", "3"), testFunc("1", "2", "3"))
+	assert.Equal(t, expectedElement("1", "2", "3", []byte{0x00}), testFunc("1", "2", "3", []byte{0x00}))
 }
