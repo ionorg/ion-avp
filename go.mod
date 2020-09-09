@@ -5,9 +5,9 @@ go 1.13
 require (
 	github.com/at-wat/ebml-go v0.11.0
 	github.com/golang/protobuf v1.4.2
-	github.com/pion/ion-sfu v1.0.6
+	github.com/pion/ion-sfu v1.0.9
 	github.com/pion/rtp v1.6.0
-	github.com/pion/webrtc/v3 v3.0.0-beta.4.0.20200902134452-789ff0975342
+	github.com/pion/webrtc/v3 v3.0.0-beta.4.0.20200908143909-40eb1f2404c0
 	github.com/rs/zerolog v1.19.0
 	github.com/spf13/viper v1.7.1
 	google.golang.org/grpc v1.32.0
