@@ -11,5 +11,5 @@ require (
 	github.com/rs/zerolog v1.19.0
 	github.com/spf13/viper v1.7.1
 	google.golang.org/grpc v1.32.0
-	google.golang.org/protobuf v1.23.0
+	google.golang.org/protobuf v1.25.0
 )
