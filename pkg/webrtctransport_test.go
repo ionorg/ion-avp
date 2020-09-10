@@ -13,8 +13,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func CreateTestRTCTransport() *WebRTCTransport {
-	return NewWebRTCTransport("id", WebRTCTransportConfig{})
+func waitForBuilder(transport *WebRTCTransport, tid string) chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		for {
+			transport.mu.RLock()
+			if transport.builders[tid] != nil {
+				transport.mu.RUnlock()
+				close(done)
+				return
+			}
+			transport.mu.RUnlock()
+			time.Sleep(50 * time.Millisecond)
+		}
+	}()
+	return done
 }
 
 func TestNewWebRTCTransport(t *testing.T) {
@@ -40,7 +53,7 @@ func TestNewWebRTCTransport(t *testing.T) {
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
-	rtcTransport := CreateTestRTCTransport()
+	rtcTransport := NewWebRTCTransport("id", WebRTCTransportConfig{})
 
 	rtcTransport.OnClose(func() {
 		onTransportCloseFunc()
@@ -101,7 +114,7 @@ func TestNewWebRTCTransportWithBuilder(t *testing.T) {
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
-	rtcTransport := CreateTestRTCTransport()
+	rtcTransport := NewWebRTCTransport("id", WebRTCTransportConfig{})
 	assert.NotNil(t, rtcTransport)
 
 	rtcTransport.OnClose(func() {
@@ -151,7 +164,7 @@ func TestNewWebRTCTransportWithOnNegotiation(t *testing.T) {
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
-	rtcTransport := CreateTestRTCTransport()
+	rtcTransport := NewWebRTCTransport("id", WebRTCTransportConfig{})
 	assert.NotNil(t, rtcTransport)
 
 	rtcTransport.OnClose(func() {
@@ -209,15 +222,15 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	me := webrtc.MediaEngine{}
 	me.RegisterDefaultCodecs()
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
-	_, remoteB, err := newPair(webrtc.Configuration{}, api)
-	assert.NoError(t, err)
-	defer remoteB.Close()
-	assert.NoError(t, err)
-
-	track, err := remoteB.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
+	remote, err := api.NewPeerConnection(webrtc.Configuration{})
+	defer remote.Close()
 	assert.NoError(t, err)
 
-	_, err = remoteB.AddTrack(track)
+	tid := "tid"
+	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeVP8, rand.Uint32(), tid, "pion")
+	assert.NoError(t, err)
+
+	_, err = remote.AddTrack(track)
 	assert.NoError(t, err)
 
 	onTransportCloseFired, onTransportCloseFunc := context.WithCancel(context.Background())
@@ -226,42 +239,39 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
-	rtcTransport := CreateTestRTCTransport()
-	assert.NotNil(t, rtcTransport)
+	transport := NewWebRTCTransport("id", WebRTCTransportConfig{})
+	assert.NotNil(t, transport)
 
-	rtcTransport.OnClose(func() {
+	transport.OnClose(func() {
 		onTransportCloseFunc()
 	})
 
-	rtcTransport.Process("123", "tid", "test-eid", []byte{})
-	rtcTransport.Process("123", "tid", "test-eid2", []byte{})
-	offer, err := rtcTransport.CreateOffer()
-	gatherComplete := webrtc.GatheringCompletePromise(rtcTransport.pc)
+	transport.Process("123", tid, "test-eid", []byte{})
+
+	offer, err := remote.CreateOffer(nil)
+	assert.NoError(t, remote.SetLocalDescription(offer))
+	gatherComplete := webrtc.GatheringCompletePromise(remote)
 	assert.NoError(t, err)
 	assert.NotNil(t, offer)
-
-	assert.NoError(t, rtcTransport.SetLocalDescription(offer))
 	<-gatherComplete
-	assert.NoError(t, remoteB.SetRemoteDescription(offer))
-
-	answer, err := remoteB.CreateAnswer(nil)
+	assert.NoError(t, transport.SetRemoteDescription(*remote.LocalDescription()))
+	answer, err := transport.CreateAnswer()
 	assert.NoError(t, err)
-	err = remoteB.SetLocalDescription(answer)
+	err = transport.SetLocalDescription(answer)
 	assert.NoError(t, err)
-	assert.NoError(t, rtcTransport.SetRemoteDescription(answer))
+	assert.NoError(t, remote.SetRemoteDescription(answer))
 
-	mu := sync.RWMutex{}
-	mu.RLock()
-	builder := rtcTransport.builders["tid"]
-	mu.RUnlock()
-	assert.NotNil(t, builder)
+	done := waitForBuilder(transport, tid)
+	sendRTPUntilDone(done, t, []*webrtc.Track{track})
+	// builder := transport.builders["tid"]
+	// assert.NotNil(t, builder)
 	//assert.NotNil(t, builder.stats())
 	//assert.Equal(t, builder.elements["test-eid"].ID(), "test-id")
 	//builder.Stop()
 
-	assert.NoError(t, rtcTransport.Close())
+	assert.NoError(t, transport.Close())
 	<-onTransportCloseFired.Done()
 
-	assert.NoError(t, rtcTransport.pc.Close())
+	assert.NoError(t, transport.pc.Close())
 
 }
