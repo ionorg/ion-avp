@@ -200,3 +200,67 @@ func TestNewWebRTCTransportWithOnNegotiation(t *testing.T) {
 
 	assert.NoError(t, rtcTransport.pc.Close())
 }
+
+func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
+	report := test.CheckRoutines(t)
+	defer report()
+
+	me := webrtc.MediaEngine{}
+	me.RegisterDefaultCodecs()
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	_, remoteB, err := newPair(webrtc.Configuration{}, api)
+	assert.NoError(t, err)
+	defer remoteB.Close()
+	assert.NoError(t, err)
+
+	track, err := remoteB.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
+	assert.NoError(t, err)
+
+	_, err = remoteB.AddTrack(track)
+	assert.NoError(t, err)
+
+	onTransportCloseFired, onTransportCloseFunc := context.WithCancel(context.Background())
+
+	registry := NewRegistry()
+	registry.AddElement("test-eid", testFunc)
+	Init(registry)
+
+	rtcTransport := CreateTestRTCTransport()
+	assert.NotNil(t, rtcTransport)
+
+	rtcTransport.OnClose(func() {
+		onTransportCloseFunc()
+	})
+
+	rtcTransport.Process("123", "tid", "test-eid", []byte{})
+	rtcTransport.Process("123", "tid", "test-eid2", []byte{})
+	offer, err := rtcTransport.CreateOffer()
+	gatherComplete := webrtc.GatheringCompletePromise(rtcTransport.pc)
+	assert.NoError(t, err)
+	assert.NotNil(t, offer)
+
+	assert.NoError(t, rtcTransport.SetLocalDescription(offer))
+	<-gatherComplete
+	assert.NoError(t, remoteB.SetRemoteDescription(offer))
+
+	answer, err := remoteB.CreateAnswer(nil)
+	assert.NoError(t, err)
+	err = remoteB.SetLocalDescription(answer)
+	assert.NoError(t, err)
+	assert.NoError(t, rtcTransport.SetRemoteDescription(answer))
+
+	mu := sync.RWMutex{}
+	mu.RLock()
+	builder := rtcTransport.builders["tid"]
+	mu.RUnlock()
+	assert.NotNil(t, builder)
+	//assert.NotNil(t, builder.stats())
+	//assert.Equal(t, builder.elements["test-eid"].ID(), "test-id")
+	//builder.Stop()
+
+	assert.NoError(t, rtcTransport.Close())
+	<-onTransportCloseFired.Done()
+
+	assert.NoError(t, rtcTransport.pc.Close())
+
+}
