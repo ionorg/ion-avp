@@ -27,7 +27,7 @@ type Builder struct {
 	mu       sync.RWMutex
 	stop     bool
 	builder  *samplebuilder.SampleBuilder
-	elements sync.Map
+	elements map[string]Element
 	sequence uint16
 	track    *webrtc.Track
 	out      chan *Sample
@@ -53,7 +53,7 @@ func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
 
 	b := &Builder{
 		builder:  samplebuilder.New(maxLate, depacketizer),
-		elements: sync.Map{},
+		elements: make(map[string]Element),
 		track:    track,
 		out:      make(chan *Sample, maxSize),
 	}
@@ -72,7 +72,7 @@ func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
 func (b *Builder) AttachElement(e Element) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	b.elements.Store(e.ID(), e)
+	b.elements[e.ID()] = e
 }
 
 // Track returns the builders underlying track
@@ -132,21 +132,21 @@ func (b *Builder) forward() {
 	for {
 		sample := <-b.out
 
-		b.mu.Lock()
+		b.mu.RLock()
 		elements := b.elements
 		stop := b.stop
-		b.mu.Unlock()
 		if stop {
+			b.mu.RUnlock()
 			return
 		}
 
-		elements.Range(func(_, element interface{}) bool {
-			err := element.(Element).Write(sample)
+		for _, e := range elements {
+			err := e.Write(sample)
 			if err != nil {
 				log.Errorf("error writing sample: %s", err)
 			}
-			return true
-		})
+		}
+		b.mu.RUnlock()
 	}
 }
 
@@ -158,12 +158,10 @@ func (b *Builder) Stop() {
 		return
 	}
 	b.stop = true
-
-	b.elements.Range(func(eid, element interface{}) bool {
-		element.(Element).Close()
-		b.elements.Delete(eid)
-		return true
-	})
+	for eid, e := range b.elements {
+		e.Close()
+		delete(b.elements, eid)
+	}
 	close(b.out)
 }
 
@@ -171,9 +169,8 @@ func (b *Builder) stats() string {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	info := fmt.Sprintf("      track: %s\n", b.track.ID())
-	b.elements.Range(func(id, _ interface{}) bool {
+	for id := range b.elements {
 		info += fmt.Sprintf("        element: %s\n", id)
-		return true
-	})
+	}
 	return info
 }

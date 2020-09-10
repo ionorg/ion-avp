@@ -2,14 +2,15 @@ package avp
 
 import (
 	"context"
+	"io"
+	"testing"
+	"time"
+
 	"github.com/pion/transport/test"
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/exp/rand"
-	"io"
-	"testing"
-	"time"
 )
 
 // newPair creates two new peer connections (an offerer and an answerer) using
@@ -70,9 +71,9 @@ func sendRTPUntilDone(done <-chan struct{}, t *testing.T, tracks []*webrtc.Track
 }
 
 func TestNewBuilder_WithOpusName(t *testing.T) {
-
 	lim := test.TimeOut(time.Second * 30)
 	defer lim.Stop()
+
 	report := test.CheckRoutines(t)
 	defer report()
 
@@ -120,13 +121,13 @@ func TestNewBuilder_WithOpusName(t *testing.T) {
 }
 
 func TestNewBuilder_WithVP8Packet(t *testing.T) {
-
-	var builder *Builder
 	report := test.CheckRoutines(t)
 	defer report()
+
 	lim := test.TimeOut(time.Second * 30)
 	defer lim.Stop()
 
+	var builder *Builder
 	me := webrtc.MediaEngine{}
 	me.RegisterDefaultCodecs()
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
@@ -167,17 +168,16 @@ func TestNewBuilder_WithVP8Packet(t *testing.T) {
 
 	// This is to ensure that the builder stop is not called when it has already been stopped
 	builder.Stop()
-
 }
 
 func TestNewBuilder_WithVP9Packet(t *testing.T) {
-
-	var builder *Builder
 	report := test.CheckRoutines(t)
 	defer report()
+
 	lim := test.TimeOut(time.Second * 30)
 	defer lim.Stop()
 
+	var builder *Builder
 	me := webrtc.MediaEngine{}
 	me.RegisterDefaultCodecs()
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
@@ -217,13 +217,12 @@ func TestNewBuilder_WithVP9Packet(t *testing.T) {
 
 	// This is to ensure that the builder stop is not called when it has already been stopped
 	builder.Stop()
-
 }
 
 func TestNewBuilder_WithH264Packet(t *testing.T) {
-
 	report := test.CheckRoutines(t)
 	defer report()
+
 	lim := test.TimeOut(time.Second * 30)
 	defer lim.Stop()
 
@@ -231,10 +230,10 @@ func TestNewBuilder_WithH264Packet(t *testing.T) {
 	me.RegisterDefaultCodecs()
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
 	sfu, remote, err := newPair(webrtc.Configuration{}, api)
+	assert.NoError(t, err)
+
 	defer sfu.Close()
 	defer remote.Close()
-
-	assert.NoError(t, err)
 
 	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeH264, rand.Uint32(), "audio", "pion")
 	assert.NoError(t, err)
@@ -269,5 +268,4 @@ func TestNewBuilder_WithH264Packet(t *testing.T) {
 	err = signalPair(remote, sfu)
 	assert.NoError(t, err)
 	sendRTPUntilDone(onBuilderFired.Done(), t, []*webrtc.Track{track})
-
 }
