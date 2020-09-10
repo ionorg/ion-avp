@@ -135,8 +135,8 @@ func (b *Builder) forward() {
 		b.mu.RLock()
 		elements := b.elements
 		stop := b.stop
-		b.mu.RUnlock()
 		if stop {
+			b.mu.RUnlock()
 			return
 		}
 
@@ -146,6 +146,7 @@ func (b *Builder) forward() {
 				log.Errorf("error writing sample: %s", err)
 			}
 		}
+		b.mu.RUnlock()
 	}
 }
 
