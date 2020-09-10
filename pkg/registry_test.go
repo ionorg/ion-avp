@@ -26,14 +26,14 @@ func (e *elementMock) Read() <-chan *Sample {
 
 func (e *elementMock) Close() {}
 
+func testFunc(sid, pid, tid string, config []byte) Element {
+	return &elementMock{}
+}
+
 func TestNewRegistry(t *testing.T) {
 
 	registry := NewRegistry()
 	assert.NotNil(t, registry)
-
-	testFunc := func(sid, pid, tid string, config []byte) Element {
-		return &elementMock{}
-	}
 
 	registry.AddElement("test", testFunc)
 	expectedElement := registry.GetElement("test")
