@@ -240,7 +240,6 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	me.RegisterDefaultCodecs()
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
 	remote, err := api.NewPeerConnection(webrtc.Configuration{})
-	defer remote.Close()
 	assert.NoError(t, err)
 
 	tid := "tid"
@@ -297,6 +296,5 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 
 	assert.NoError(t, transport.Close())
 	<-onTransportCloseFired.Done()
-	transport.pc.Close()
-
+	assert.NoError(t, remote.Close())
 }
