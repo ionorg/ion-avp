@@ -2,14 +2,15 @@ package avp
 
 import (
 	"context"
-	"github.com/pion/rtcp"
-	"github.com/pion/transport/test"
-	"github.com/pion/webrtc/v3"
-	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/pion/rtcp"
+	"github.com/pion/transport/test"
+	"github.com/pion/webrtc/v3"
+	"github.com/stretchr/testify/assert"
 )
 
 func CreateTestRTCTransport() *WebRTCTransport {
