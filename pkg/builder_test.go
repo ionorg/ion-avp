@@ -235,7 +235,7 @@ func TestNewBuilder_WithH264Packet(t *testing.T) {
 	defer sfu.Close()
 	defer remote.Close()
 
-	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeH264, rand.Uint32(), "audio", "pion")
+	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeH264, rand.Uint32(), "video", "pion")
 	assert.NoError(t, err)
 
 	_, err = remote.AddTrack(track)

@@ -75,18 +75,22 @@ func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
 				log.Debugf("stop builder %s", id)
 				delete(t.builders, id)
 			}
-
-			if len(t.builders) == 0 && len(t.pending) == 0 {
-				// No more tracks, cleanup transport
-				t.mu.Unlock()
-				t.Close()
-				return
-			}
 			t.mu.Unlock()
+
+			if t.isEmpty() {
+				// No more tracks, cleanup transport
+				t.Close()
+			}
 		})
 	})
 
 	return t
+}
+
+func (t *WebRTCTransport) isEmpty() bool {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return len(t.builders) == 0 && len(t.pending) == 0
 }
 
 // OnClose sets a handler that is called when the webrtc transport is closed

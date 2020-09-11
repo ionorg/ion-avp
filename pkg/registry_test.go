@@ -9,7 +9,7 @@ import (
 type elementMock struct{}
 
 func (e *elementMock) ID() string {
-	return ""
+	return "test-id"
 }
 
 func (e *elementMock) Write(*Sample) error {
