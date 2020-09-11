@@ -92,11 +92,11 @@ func TestNewBuilder_WithOpusName(t *testing.T) {
 	assert.NoError(t, err)
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
-	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver, _ []*webrtc.Stream) {
+	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver) {
 		builder := NewBuilder(track, 200)
 
 		// To ensure that forward and go on build stops immediately
-		builder.Stop()
+		builder.stop()
 		assert.NotNil(t, builder)
 
 		builder.AttachElement(&elementMock{})
@@ -112,7 +112,7 @@ func TestNewBuilder_WithOpusName(t *testing.T) {
 		onBuilderFiredFunc()
 	})
 
-	//defer builder.Stop()
+	//defer builder.stop()
 
 	err = signalPair(remote, sfu)
 	assert.NoError(t, err)
@@ -141,9 +141,9 @@ func TestNewBuilder_WithVP8Packet(t *testing.T) {
 	assert.NoError(t, err)
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
-	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver, _ []*webrtc.Stream) {
+	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver) {
 		builder = NewBuilder(track, 200)
-		defer builder.Stop()
+		defer builder.stop()
 		assert.NotNil(t, builder)
 
 		builder.AttachElement(&elementMock{})
@@ -167,7 +167,7 @@ func TestNewBuilder_WithVP8Packet(t *testing.T) {
 	assert.NoError(t, sfu.Close())
 
 	// This is to ensure that the builder stop is not called when it has already been stopped
-	builder.Stop()
+	builder.stop()
 }
 
 func TestNewBuilder_WithVP9Packet(t *testing.T) {
@@ -191,16 +191,16 @@ func TestNewBuilder_WithVP9Packet(t *testing.T) {
 	assert.NoError(t, err)
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
-	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver, _ []*webrtc.Stream) {
+	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver) {
 		builder = NewBuilder(track, 200)
-		defer builder.Stop()
+		defer builder.stop()
 		assert.NotNil(t, builder)
 
 		builder.AttachElement(&elementMock{})
 		assert.Equal(t, track, builder.Track())
 
 		// To cause the building to stop while trying to read tracks
-		builder.Stop()
+		builder.stop()
 		assert.NotEmpty(t, builder.stats())
 
 		time.Sleep(time.Second * 10)
@@ -216,7 +216,7 @@ func TestNewBuilder_WithVP9Packet(t *testing.T) {
 	assert.NoError(t, sfu.Close())
 
 	// This is to ensure that the builder stop is not called when it has already been stopped
-	builder.Stop()
+	builder.stop()
 }
 
 func TestNewBuilder_WithH264Packet(t *testing.T) {
@@ -242,7 +242,7 @@ func TestNewBuilder_WithH264Packet(t *testing.T) {
 	assert.NoError(t, err)
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
-	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver, _ []*webrtc.Stream) {
+	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver) {
 		builder := NewBuilder(track, 200)
 		assert.NotNil(t, builder)
 
@@ -261,8 +261,8 @@ func TestNewBuilder_WithH264Packet(t *testing.T) {
 		onBuilderFiredFunc()
 
 		// To ensure that builder.Stop returns at the second time while trying to call another Stop
-		builder.Stop()
-		builder.Stop()
+		builder.stop()
+		builder.stop()
 	})
 
 	err = signalPair(remote, sfu)

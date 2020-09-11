@@ -51,7 +51,7 @@ func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
 		pending:  make(map[string][]func() Element),
 	}
 
-	pc.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver, streams []*webrtc.Stream) {
+	pc.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver) {
 		id := track.ID()
 		log.Infof("Got track: %s", id)
 		builder := NewBuilder(track, 200)
@@ -68,12 +68,10 @@ func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
 			delete(t.pending, id)
 		}
 
-		streams[0].OnRemoveTrack(func(track *webrtc.Track) {
+		builder.OnStop(func() {
 			t.mu.Lock()
-			id := track.ID()
 			b := t.builders[id]
 			if b != nil {
-				b.Stop()
 				log.Debugf("stop builder %s", id)
 				delete(t.builders, id)
 			}
@@ -100,9 +98,6 @@ func (t *WebRTCTransport) OnClose(f func()) {
 func (t *WebRTCTransport) Close() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	for _, builder := range t.builders {
-		builder.Stop()
-	}
 
 	if t.onCloseFn != nil {
 		t.onCloseFn()
