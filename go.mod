@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/at-wat/ebml-go v0.11.0
 	github.com/golang/protobuf v1.4.2
-	github.com/pion/ion-sfu v1.0.11-0.20200909182130-c6f50d6ac8f4
+	github.com/pion/ion-sfu v1.0.11
 	github.com/pion/rtcp v1.2.3
 	github.com/pion/rtp v1.6.0
 	github.com/pion/transport v0.10.1
