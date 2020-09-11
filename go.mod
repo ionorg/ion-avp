@@ -9,7 +9,7 @@ require (
 	github.com/pion/rtcp v1.2.3
 	github.com/pion/rtp v1.6.0
 	github.com/pion/transport v0.10.1
-	github.com/pion/webrtc/v3 v3.0.0-beta.4.0.20200910131025-c2ed6ee8350d
+	github.com/pion/webrtc/v3 v3.0.0-beta.4.0.20200911055832-fc11e7c66cff
 	github.com/rs/zerolog v1.19.0
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
