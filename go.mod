@@ -10,7 +10,7 @@ require (
 	github.com/pion/rtp v1.6.0
 	github.com/pion/transport v0.10.1
 	github.com/pion/webrtc/v3 v3.0.0-beta.4.0.20200911055832-fc11e7c66cff
-	github.com/rs/zerolog v1.19.0
+	github.com/rs/zerolog v1.20.0
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/exp v0.0.0-20191030013958-a1ab85dbe136
