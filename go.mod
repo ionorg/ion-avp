@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/at-wat/ebml-go v0.11.0
 	github.com/golang/protobuf v1.4.2
-	github.com/pion/ion-sfu v1.0.11
+	github.com/pion/ion-sfu v1.0.15
 	github.com/pion/rtcp v1.2.3
 	github.com/pion/rtp v1.6.0
 	github.com/pion/transport v0.10.1
@@ -14,6 +14,6 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/exp v0.0.0-20191030013958-a1ab85dbe136
-	google.golang.org/grpc v1.27.1
+	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.23.0
 )
