@@ -3,6 +3,7 @@ package elements
 import (
 	"sync"
 
+	"github.com/at-wat/ebml-go/mkvcore"
 	"github.com/at-wat/ebml-go/webm"
 
 	avp "github.com/pion/ion-avp/pkg"
@@ -151,7 +152,7 @@ func (s *WebmSaver) initWriter(width, height int) {
 					PixelHeight: uint64(height),
 				},
 			},
-		})
+		}, mkvcore.WithSeekHead(true))
 	if err != nil {
 		log.Errorf("init writer err: %s", err)
 	}
