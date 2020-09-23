@@ -3,7 +3,6 @@ package avp
 import (
 	"context"
 	"math/rand"
-	"sync"
 	"testing"
 	"time"
 
@@ -47,6 +46,21 @@ func waitForRemoveTrack(transport *WebRTCTransport, tid string) chan struct{} {
 	return done
 }
 
+func signal(t *testing.T, transport *WebRTCTransport, remote *webrtc.PeerConnection) {
+	offer, err := remote.CreateOffer(nil)
+	gatherComplete := webrtc.GatheringCompletePromise(remote)
+	assert.NoError(t, err)
+	assert.NoError(t, remote.SetLocalDescription(offer))
+	<-gatherComplete
+
+	assert.NoError(t, transport.SetRemoteDescription(offer))
+
+	answer, err := transport.CreateAnswer()
+	assert.NoError(t, err)
+	assert.NoError(t, transport.SetLocalDescription(answer))
+	assert.NoError(t, remote.SetRemoteDescription(answer))
+}
+
 func TestNewWebRTCTransport(t *testing.T) {
 	report := test.CheckRoutines(t)
 	defer report()
@@ -54,57 +68,42 @@ func TestNewWebRTCTransport(t *testing.T) {
 	me := webrtc.MediaEngine{}
 	me.RegisterDefaultCodecs()
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
-	remoteA, _, err := newPair(webrtc.Configuration{}, api)
+	remote, err := api.NewPeerConnection(webrtc.Configuration{})
 	assert.NoError(t, err)
-	defer remoteA.Close()
+	defer remote.Close()
 
-	track, err := remoteA.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
-	assert.NoError(t, err)
-
-	_, err = remoteA.AddTrack(track)
+	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
 	assert.NoError(t, err)
 
-	onTransportCloseFired, onTransportCloseFunc := context.WithCancel(context.Background())
+	_, err = remote.AddTrack(track)
+	assert.NoError(t, err)
 
-	registry := NewRegistry()
+	var registry = NewRegistry()
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
-	rtcTransport := NewWebRTCTransport("id", WebRTCTransportConfig{})
+	closed := make(chan struct{})
+	transport := NewWebRTCTransport("id", WebRTCTransportConfig{})
 
-	rtcTransport.OnClose(func() {
-		onTransportCloseFunc()
+	transport.OnClose(func() {
+		close(closed)
 	})
 
-	rtcTransport.Process("123", "tid", "eid", []byte{})
+	transport.Process("123", "tid", "eid", []byte{})
 
-	offer, err := remoteA.CreateOffer(nil)
-	gatherComplete := webrtc.GatheringCompletePromise(remoteA)
-	assert.NoError(t, err)
-	assert.NoError(t, remoteA.SetLocalDescription(offer))
-	<-gatherComplete
-
-	assert.NoError(t, rtcTransport.SetRemoteDescription(offer))
-
-	answer, err := rtcTransport.CreateAnswer()
-	assert.NoError(t, err)
-	assert.NoError(t, rtcTransport.SetLocalDescription(answer))
-	assert.NoError(t, remoteA.SetRemoteDescription(answer))
-
-	time.Sleep(time.Second * 10)
+	signal(t, transport, remote)
 
 	expectedString := []string{"track", "pending"}
 
-	stats := rtcTransport.stats()
+	stats := transport.stats()
 	for _, expected := range expectedString {
 		assert.Contains(t, stats, expected)
 	}
 
-	assert.NoError(t, rtcTransport.Close())
+	assert.NoError(t, transport.Close())
+	assert.NotNil(t, transport)
 
-	assert.NotNil(t, rtcTransport)
-
-	sendRTPUntilDone(onTransportCloseFired.Done(), t, []*webrtc.Track{track})
+	sendRTPUntilDone(closed, t, []*webrtc.Track{track})
 }
 
 func TestNewWebRTCTransportWithBuilder(t *testing.T) {
@@ -114,15 +113,13 @@ func TestNewWebRTCTransportWithBuilder(t *testing.T) {
 	me := webrtc.MediaEngine{}
 	me.RegisterDefaultCodecs()
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
-	_, remoteB, err := newPair(webrtc.Configuration{}, api)
-	assert.NoError(t, err)
-	defer remoteB.Close()
+	remote, err := api.NewPeerConnection(webrtc.Configuration{})
 	assert.NoError(t, err)
 
-	track, err := remoteB.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
+	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
 	assert.NoError(t, err)
 
-	_, err = remoteB.AddTrack(track)
+	_, err = remote.AddTrack(track)
 	assert.NoError(t, err)
 
 	onTransportCloseFired, onTransportCloseFunc := context.WithCancel(context.Background())
@@ -131,36 +128,26 @@ func TestNewWebRTCTransportWithBuilder(t *testing.T) {
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
-	rtcTransport := NewWebRTCTransport("id", WebRTCTransportConfig{})
-	assert.NotNil(t, rtcTransport)
+	transport := NewWebRTCTransport("id", WebRTCTransportConfig{})
+	assert.NotNil(t, transport)
 
-	rtcTransport.OnClose(func() {
+	transport.OnClose(func() {
 		onTransportCloseFunc()
 	})
 
-	rtcTransport.Process("123", "tid", "test-eid", []byte{})
-	rtcTransport.Process("123", "tid", "test-eid", []byte{})
-	offer, err := rtcTransport.CreateOffer()
-	assert.NoError(t, err)
-	assert.NotNil(t, offer)
+	transport.Process("123", "tid", "test-eid", []byte{})
+	transport.Process("123", "tid", "test-eid", []byte{})
 
-	assert.NoError(t, rtcTransport.SetLocalDescription(offer))
-	assert.NoError(t, remoteB.SetRemoteDescription(*rtcTransport.pc.LocalDescription()))
+	signal(t, transport, remote)
 
-	answer, err := remoteB.CreateAnswer(nil)
-	assert.NoError(t, err)
-	err = remoteB.SetLocalDescription(answer)
-	assert.NoError(t, err)
-	assert.NoError(t, rtcTransport.SetRemoteDescription(*remoteB.LocalDescription()))
+	transport.OnICECandidate(func(c *webrtc.ICECandidate) {})
 
-	rtcTransport.OnICECandidate(func(c *webrtc.ICECandidate) {})
-
-	assert.NoError(t, rtcTransport.AddICECandidate(webrtc.ICECandidateInit{Candidate: "1986380506 99 udp 2 10.0.75.1 53634 typ host generation 0 network-id 2"}))
-	assert.NoError(t, rtcTransport.Close())
+	assert.NoError(t, transport.AddICECandidate(webrtc.ICECandidateInit{Candidate: "1986380506 99 udp 2 10.0.75.1 53634 typ host generation 0 network-id 2"}))
+	assert.NoError(t, transport.Close())
 	<-onTransportCloseFired.Done()
 
-	assert.NoError(t, rtcTransport.pc.Close())
-
+	assert.NoError(t, transport.pc.Close())
+	assert.NoError(t, remote.Close())
 }
 
 func TestNewWebRTCTransportWithOnNegotiation(t *testing.T) {
@@ -170,66 +157,36 @@ func TestNewWebRTCTransportWithOnNegotiation(t *testing.T) {
 	me := webrtc.MediaEngine{}
 	me.RegisterDefaultCodecs()
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
-	_, remoteB, err := newPair(webrtc.Configuration{}, api)
+	remote, err := api.NewPeerConnection(webrtc.Configuration{})
 	assert.NoError(t, err)
-	defer remoteB.Close()
-	assert.NoError(t, err)
-
-	onTransportCloseFired, onTransportCloseFunc := context.WithCancel(context.Background())
 
 	registry := NewRegistry()
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
-	rtcTransport := NewWebRTCTransport("id", WebRTCTransportConfig{})
-	assert.NotNil(t, rtcTransport)
+	transport := NewWebRTCTransport("id", WebRTCTransportConfig{})
+	assert.NotNil(t, transport)
 
-	rtcTransport.OnClose(func() {
-		onTransportCloseFunc()
+	negotiated := make(chan struct{})
+	remote.OnNegotiationNeeded(func() {
+		signal(t, transport, remote)
+		close(negotiated)
 	})
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	remoteB.OnNegotiationNeeded(func() {
-		offer, offerErr := remoteB.CreateOffer(nil)
-		gatherComplete := webrtc.GatheringCompletePromise(remoteB)
-		assert.NoError(t, offerErr)
-		assert.NoError(t, remoteB.SetLocalDescription(offer))
-
-		<-gatherComplete
-		assert.NoError(t, rtcTransport.SetRemoteDescription(offer))
-
-		answer, transportErr := rtcTransport.CreateAnswer()
-		assert.NoError(t, transportErr)
-
-		assert.NoError(t, rtcTransport.SetLocalDescription(answer))
-		assert.NoError(t, remoteB.SetRemoteDescription(answer))
-
-		wg.Done()
-	})
-
-	track, err := remoteB.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
+	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
 	assert.NoError(t, err)
 
-	sender, err := remoteB.AddTrack(track)
+	sender, err := remote.AddTrack(track)
 	assert.NoError(t, err)
 
-	wg.Wait()
+	<-negotiated
 
-	err = remoteB.RemoveTrack(sender)
+	err = remote.RemoveTrack(sender)
 	assert.NoError(t, err)
 
-	assert.NoError(t, remoteB.WriteRTCP([]rtcp.Packet{&rtcp.ReceiverEstimatedMaximumBitrate{Bitrate: 10000000, SenderSSRC: track.SSRC()}}))
-	rtcTransport.OnICECandidate(func(c *webrtc.ICECandidate) {})
-
-	assert.NoError(t, rtcTransport.AddICECandidate(webrtc.ICECandidateInit{Candidate: "1986380506 99 udp 2 10.0.75.1 53634 typ host generation 0 network-id 2"}))
-
-	time.Sleep(time.Second * 10)
-
-	assert.NoError(t, rtcTransport.Close())
-	<-onTransportCloseFired.Done()
-
-	assert.NoError(t, rtcTransport.pc.Close())
+	assert.NoError(t, remote.WriteRTCP([]rtcp.Packet{&rtcp.ReceiverEstimatedMaximumBitrate{Bitrate: 10000000, SenderSSRC: track.SSRC()}}))
+	assert.NoError(t, transport.Close())
+	assert.NoError(t, remote.Close())
 }
 
 func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
@@ -249,18 +206,12 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	sender, err := remote.AddTrack(track)
 	assert.NoError(t, err)
 
-	onTransportCloseFired, onTransportCloseFunc := context.WithCancel(context.Background())
-	//onTrackFired, onTrackFiredFunc := context.WithCancel(context.Background())
 	registry := NewRegistry()
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
 	transport := NewWebRTCTransport("id", WebRTCTransportConfig{})
 	assert.NotNil(t, transport)
-
-	transport.OnClose(func() {
-		onTransportCloseFunc()
-	})
 
 	transport.Process("123", tid, "test-eid", []byte{})
 
@@ -295,6 +246,5 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	sendRTPUntilDone(done, t, []*webrtc.Track{track})
 
 	assert.NoError(t, transport.Close())
-	<-onTransportCloseFired.Done()
 	assert.NoError(t, remote.Close())
 }

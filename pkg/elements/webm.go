@@ -1,6 +1,8 @@
 package elements
 
 import (
+	"sync"
+
 	"github.com/at-wat/ebml-go/webm"
 
 	avp "github.com/pion/ion-avp/pkg"
@@ -19,7 +21,9 @@ type WebmSaverConfig struct {
 
 // WebmSaver Module for saving rtp streams to webm
 type WebmSaver struct {
+	sync.Mutex
 	id                             string
+	closed                         bool
 	audioWriter, videoWriter       webm.BlockWriteCloser
 	audioTimestamp, videoTimestamp uint32
 	sampleWriter                   *SampleWriter
@@ -59,15 +63,24 @@ func (s *WebmSaver) Attach(e avp.Element) error {
 
 // Close Close the WebmSaver
 func (s *WebmSaver) Close() {
+	s.Lock()
+	defer s.Unlock()
 	log.Infof("WebmSaver.Close() => %s", s.id)
+
+	if s.closed {
+		return
+	}
+
+	s.closed = true
+
 	if s.audioWriter != nil {
 		if err := s.audioWriter.Close(); err != nil {
-			panic(err)
+			log.Errorf("audio close err: %s", err)
 		}
 	}
 	if s.videoWriter != nil {
 		if err := s.videoWriter.Close(); err != nil {
-			panic(err)
+			log.Errorf("video close err: %s", err)
 		}
 	}
 }
@@ -79,7 +92,7 @@ func (s *WebmSaver) pushOpus(sample *avp.Sample) {
 		}
 		t := (sample.Timestamp - s.audioTimestamp) / 48
 		if _, err := s.audioWriter.Write(true, int64(t), sample.Payload.([]byte)); err != nil {
-			panic(err)
+			log.Errorf("audio writer err: %s", err)
 		}
 	}
 }
@@ -107,7 +120,7 @@ func (s *WebmSaver) pushVP8(sample *avp.Sample) {
 		}
 		t := (sample.Timestamp - s.videoTimestamp) / 90
 		if _, err := s.videoWriter.Write(videoKeyframe, int64(t), payload); err != nil {
-			panic(err)
+			log.Errorf("video write err: %s", err)
 		}
 	}
 }
@@ -132,7 +145,7 @@ func (s *WebmSaver) initWriter(width, height int) {
 				TrackUID:        67890,
 				CodecID:         "V_VP8",
 				TrackType:       1,
-				DefaultDuration: 33333333,
+				DefaultDuration: 20000000,
 				Video: &webm.Video{
 					PixelWidth:  uint64(width),
 					PixelHeight: uint64(height),
@@ -140,7 +153,7 @@ func (s *WebmSaver) initWriter(width, height int) {
 			},
 		})
 	if err != nil {
-		panic(err)
+		log.Errorf("init writer err: %s", err)
 	}
 	log.Infof("WebM saver has started with video width=%d, height=%d\n", width, height)
 	s.audioWriter = ws[0]
