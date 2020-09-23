@@ -15,13 +15,19 @@ type WebRTCTransportConfig struct {
 	setting       webrtc.SettingEngine
 }
 
+type PendingProcess struct {
+	pid string
+	fn  func() Element
+}
+
 // WebRTCTransport represents a webrtc transport
 type WebRTCTransport struct {
 	id        string
 	pc        *webrtc.PeerConnection
 	mu        sync.RWMutex
 	builders  map[string]*Builder         // one builder per track
-	pending   map[string][]func() Element // maps track id to pending element constructors
+	pending   map[string][]PendingProcess // maps track id to pending element constructors
+	processes map[string]Element          // existing processes
 	onCloseFn func()
 }
 
@@ -45,10 +51,11 @@ func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
 	}
 
 	t := &WebRTCTransport{
-		id:       id,
-		pc:       pc,
-		builders: make(map[string]*Builder),
-		pending:  make(map[string][]func() Element),
+		id:        id,
+		pc:        pc,
+		builders:  make(map[string]*Builder),
+		pending:   make(map[string][]PendingProcess),
+		processes: make(map[string]Element),
 	}
 
 	pc.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver) {
@@ -63,7 +70,12 @@ func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
 		// initialize the pipeline.
 		if pending := t.pending[id]; len(pending) != 0 {
 			for _, p := range pending {
-				builder.AttachElement(p())
+				process := t.processes[p.pid]
+				if process == nil {
+					process = p.fn()
+					t.processes[p.pid] = process
+				}
+				builder.AttachElement(process)
 			}
 			delete(t.pending, id)
 		}
@@ -119,11 +131,20 @@ func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) {
 	b := t.builders[tid]
 	if b == nil {
 		log.Debugf("builder not found for track %s. queuing.", tid)
-		t.pending[tid] = append(t.pending[tid], func() Element { return e(t.id, pid, tid, config) })
+		t.pending[tid] = append(t.pending[tid], PendingProcess{
+			pid: pid,
+			fn:  func() Element { return e(t.id, pid, tid, config) },
+		})
 		return
 	}
 
-	b.AttachElement(e(t.id, pid, tid, config))
+	process := t.processes[pid]
+	if process == nil {
+		process = e(t.id, pid, tid, config)
+		t.processes[pid] = process
+	}
+
+	b.AttachElement(process)
 }
 
 // CreateOffer starts the PeerConnection and generates the localDescription
