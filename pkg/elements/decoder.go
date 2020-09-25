@@ -10,7 +10,7 @@ import (
 
 const (
 	// IDDecoder .
-	IDDecoder = "Decoder"
+	IDDecoder = "decoder"
 )
 
 // DecoderConfig .
