@@ -8,6 +8,7 @@ const (
 	TypeBinary   = 101
 	TypeRGB24    = 102
 	TypeWebM     = 103
+	TypeYCbCr    = 104
 )
 
 var (
