@@ -54,10 +54,6 @@ func (w *FileWriter) Write(sample *avp.Sample) error {
 	return err
 }
 
-func (w *FileWriter) Read() <-chan *avp.Sample {
-	return nil
-}
-
 // Attach attach a child element
 func (w *FileWriter) Attach(e avp.Element) error {
 	return ErrAttachNotSupported

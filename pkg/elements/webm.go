@@ -53,10 +53,6 @@ func (s *WebmSaver) Write(sample *avp.Sample) error {
 	return nil
 }
 
-func (s *WebmSaver) Read() <-chan *avp.Sample {
-	return nil
-}
-
 // Attach attach a child element
 func (s *WebmSaver) Attach(e avp.Element) error {
 	return s.sampleWriter.Attach(e)

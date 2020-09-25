@@ -30,9 +30,6 @@ func (w *BufWriter) Write(sample *avp.Sample) error {
 	_, err := w.buf.Write(sample.Payload.([]byte))
 	return err
 }
-func (w *BufWriter) Read() <-chan *avp.Sample {
-	return nil
-}
 func (w *BufWriter) Attach(e avp.Element) error {
 	return ErrAttachNotSupported
 }

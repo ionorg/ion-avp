@@ -5,6 +5,5 @@ type Element interface {
 	ID() string
 	Write(*Sample) error
 	Attach(Element) error
-	Read() <-chan *Sample
 	Close()
 }

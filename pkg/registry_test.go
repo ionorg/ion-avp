@@ -20,10 +20,6 @@ func (e *elementMock) Attach(Element) error {
 	return nil
 }
 
-func (e *elementMock) Read() <-chan *Sample {
-	return nil
-}
-
 func (e *elementMock) Close() {}
 
 func testFunc(sid, pid, tid string, config []byte) Element {
