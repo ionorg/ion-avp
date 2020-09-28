@@ -112,7 +112,7 @@ func TestNewBuilder_WithOpusName(t *testing.T) {
 		onBuilderFiredFunc()
 	})
 
-	//defer builder.stop()
+	// defer builder.stop()
 
 	err = signalPair(remote, sfu)
 	assert.NoError(t, err)
@@ -256,7 +256,7 @@ func TestNewBuilder_WithH264Packet(t *testing.T) {
 			assert.Contains(t, stats, entry)
 		}
 
-		//Add sleep to ensure tracks are being processed by go forward
+		// Add sleep to ensure tracks are being processed by go forward
 		time.Sleep(time.Second * 10)
 		onBuilderFiredFunc()
 

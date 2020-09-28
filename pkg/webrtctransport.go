@@ -3,17 +3,13 @@ package avp
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/pion/ion-avp/pkg/log"
+	"github.com/pion/rtcp"
 
 	"github.com/pion/webrtc/v3"
 )
-
-// WebRTCTransportConfig represents configuration options
-type WebRTCTransportConfig struct {
-	configuration webrtc.Configuration
-	setting       webrtc.SettingEngine
-}
 
 type PendingProcess struct {
 	pid string
@@ -32,12 +28,40 @@ type WebRTCTransport struct {
 }
 
 // NewWebRTCTransport creates a new webrtc transport
-func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
+func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
+	conf := webrtc.Configuration{}
+	se := webrtc.SettingEngine{}
+
+	var icePortStart, icePortEnd uint16
+
+	if len(c.WebRTC.ICEPortRange) == 2 {
+		icePortStart = c.WebRTC.ICEPortRange[0]
+		icePortEnd = c.WebRTC.ICEPortRange[1]
+	}
+
+	if icePortStart != 0 || icePortEnd != 0 {
+		if err := se.SetEphemeralUDPPortRange(icePortStart, icePortEnd); err != nil {
+			panic(err)
+		}
+	}
+
+	var iceServers []webrtc.ICEServer
+	for _, iceServer := range c.WebRTC.ICEServers {
+		s := webrtc.ICEServer{
+			URLs:       iceServer.URLs,
+			Username:   iceServer.Username,
+			Credential: iceServer.Credential,
+		}
+		iceServers = append(iceServers, s)
+	}
+
+	conf.ICEServers = iceServers
+
 	// Create peer connection
 	me := webrtc.MediaEngine{}
 	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me), webrtc.WithSettingEngine(cfg.setting))
-	pc, err := api.NewPeerConnection(cfg.configuration)
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(me), webrtc.WithSettingEngine(se))
+	pc, err := api.NewPeerConnection(conf)
 
 	if err != nil {
 		log.Errorf("Error creating peer connection: %s", err)
@@ -96,7 +120,36 @@ func NewWebRTCTransport(id string, cfg WebRTCTransportConfig) *WebRTCTransport {
 		})
 	})
 
+	go t.pliLoop(c.WebRTC.PLICycle)
+
 	return t
+}
+
+func (t *WebRTCTransport) pliLoop(cycle uint) {
+	if cycle == 0 {
+		return
+	}
+
+	ticker := time.NewTicker(time.Duration(cycle) * time.Millisecond)
+	for range ticker.C {
+		t.mu.RLock()
+		builders := t.builders
+		t.mu.RUnlock()
+
+		if len(builders) == 0 {
+			return
+		}
+
+		var pkts []rtcp.Packet
+		for _, b := range builders {
+			pkts = append(pkts, &rtcp.PictureLossIndication{SenderSSRC: b.Track().SSRC(), MediaSSRC: b.Track().SSRC()})
+		}
+
+		err := t.pc.WriteRTCP(pkts)
+		if err != nil {
+			log.Errorf("error writing pli %s", err)
+		}
+	}
 }
 
 func (t *WebRTCTransport) isEmpty() bool {

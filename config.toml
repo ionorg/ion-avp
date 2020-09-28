@@ -12,6 +12,12 @@ path = "./out/"
 level = "info"
 
 [webrtc]
+# PLI Cycle defines an interval (ms) on which the AVP will
+# request a keyframe. This PLI request will propogate to the
+# sender. It results in more bandwidth usage but will improve
+# recording quality.
+pliCycle = 1000
+
 # Range of ports that ion accepts WebRTC traffic on
 # Format: [min, max]   and max - min >= 100
 # portrange = [50000, 60000]

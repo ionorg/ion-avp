@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/pion/ion-avp/pkg/log"
-	"github.com/pion/webrtc/v3"
 )
 
 const (
@@ -18,7 +17,6 @@ var registry *Registry
 // AVP represents an avp instance
 type AVP struct {
 	config  Config
-	webrtc  WebRTCTransportConfig
 	clients map[string]*SFU
 	mu      sync.RWMutex
 }
@@ -30,45 +28,12 @@ func Init(r *Registry) {
 
 // NewAVP creates a new avp instance
 func NewAVP(c Config) *AVP {
-	w := WebRTCTransportConfig{
-		configuration: webrtc.Configuration{},
-		setting:       webrtc.SettingEngine{},
-	}
-
 	a := &AVP{
 		config:  c,
 		clients: make(map[string]*SFU),
-		webrtc:  w,
 	}
 
 	log.Init(c.Log.Level)
-
-	var icePortStart, icePortEnd uint16
-
-	if len(c.WebRTC.ICEPortRange) == 2 {
-		icePortStart = c.WebRTC.ICEPortRange[0]
-		icePortEnd = c.WebRTC.ICEPortRange[1]
-	}
-
-	if icePortStart != 0 || icePortEnd != 0 {
-		if err := a.webrtc.setting.SetEphemeralUDPPortRange(icePortStart, icePortEnd); err != nil {
-			panic(err)
-		}
-	}
-
-	var iceServers []webrtc.ICEServer
-	for _, iceServer := range c.WebRTC.ICEServers {
-		s := webrtc.ICEServer{
-			URLs:       iceServer.URLs,
-			Username:   iceServer.Username,
-			Credential: iceServer.Credential,
-		}
-		iceServers = append(iceServers, s)
-	}
-
-	a.webrtc.configuration.ICEServers = iceServers
-
-	log.Debugf("WebRTC config:\n%v", a.webrtc)
 
 	go a.stats()
 
@@ -83,7 +48,7 @@ func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string, conf
 	c := a.clients[addr]
 	// no client yet, create one
 	if c == nil {
-		c = NewSFU(addr, a.webrtc)
+		c = NewSFU(addr, a.config)
 		c.OnClose(func() {
 			a.mu.Lock()
 			defer a.mu.Unlock()

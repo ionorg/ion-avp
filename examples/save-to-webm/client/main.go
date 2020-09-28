@@ -32,7 +32,7 @@ func main() {
 	client, err := c.Signal(ctx)
 
 	if err != nil {
-		log.Fatalf("Error intializing avp signal stream: %v", err)
+		log.Fatalf("Error intializing avp signal stream: %s", err)
 	}
 
 	buf := bufio.NewReader(os.Stdin)
