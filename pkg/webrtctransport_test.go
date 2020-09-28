@@ -83,7 +83,7 @@ func TestNewWebRTCTransport(t *testing.T) {
 	Init(registry)
 
 	closed := make(chan struct{})
-	transport := NewWebRTCTransport("id", WebRTCTransportConfig{})
+	transport := NewWebRTCTransport("id", Config{})
 
 	transport.OnClose(func() {
 		close(closed)
@@ -128,7 +128,7 @@ func TestNewWebRTCTransportWithBuilder(t *testing.T) {
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
-	transport := NewWebRTCTransport("id", WebRTCTransportConfig{})
+	transport := NewWebRTCTransport("id", Config{})
 	assert.NotNil(t, transport)
 
 	transport.OnClose(func() {
@@ -164,7 +164,7 @@ func TestNewWebRTCTransportWithOnNegotiation(t *testing.T) {
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
-	transport := NewWebRTCTransport("id", WebRTCTransportConfig{})
+	transport := NewWebRTCTransport("id", Config{})
 	assert.NotNil(t, transport)
 
 	negotiated := make(chan struct{})
@@ -210,7 +210,7 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	registry.AddElement("test-eid", testFunc)
 	Init(registry)
 
-	transport := NewWebRTCTransport("id", WebRTCTransportConfig{})
+	transport := NewWebRTCTransport("id", Config{})
 	assert.NotNil(t, transport)
 
 	transport.Process("123", tid, "test-eid", []byte{})

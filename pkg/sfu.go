@@ -19,14 +19,14 @@ type SFU struct {
 	ctx        context.Context
 	cancel     context.CancelFunc
 	client     sfu.SFUClient
-	config     WebRTCTransportConfig
+	config     Config
 	mu         sync.RWMutex
 	onCloseFn  func()
 	transports map[string]*WebRTCTransport
 }
 
 // NewSFU intializes a new SFU client
-func NewSFU(addr string, config WebRTCTransportConfig) *SFU {
+func NewSFU(addr string, config Config) *SFU {
 	log.Infof("Connecting to sfu: %s", addr)
 	// Set up a connection to the sfu server.
 	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())

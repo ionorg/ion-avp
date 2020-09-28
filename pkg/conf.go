@@ -22,6 +22,7 @@ type iceconf struct {
 }
 
 type webrtcconf struct {
+	PLICycle     uint      `mapstructure:"plicycle"`
 	ICEPortRange []uint16  `mapstructure:"portrange"`
 	ICEServers   []iceconf `mapstructure:"iceserver"`
 }
