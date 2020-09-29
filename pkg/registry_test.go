@@ -8,17 +8,11 @@ import (
 
 type elementMock struct{}
 
-func (e *elementMock) ID() string {
-	return "test-id"
-}
-
 func (e *elementMock) Write(*Sample) error {
 	return nil
 }
 
-func (e *elementMock) Attach(Element) error {
-	return nil
-}
+func (e *elementMock) Attach(Element) {}
 
 func (e *elementMock) Close() {}
 

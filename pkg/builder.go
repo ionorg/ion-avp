@@ -28,7 +28,7 @@ type Builder struct {
 	stopped       bool
 	onStopHandler func()
 	builder       *samplebuilder.SampleBuilder
-	elements      map[string]Element
+	elements      []Element
 	sequence      uint16
 	track         *webrtc.Track
 	out           chan *Sample
@@ -53,10 +53,9 @@ func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
 	}
 
 	b := &Builder{
-		builder:  samplebuilder.New(maxLate, depacketizer),
-		elements: make(map[string]Element),
-		track:    track,
-		out:      make(chan *Sample, maxSize),
+		builder: samplebuilder.New(maxLate, depacketizer),
+		track:   track,
+		out:     make(chan *Sample, maxSize),
 	}
 
 	if checker != nil {
@@ -73,7 +72,7 @@ func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
 func (b *Builder) AttachElement(e Element) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	b.elements[e.ID()] = e
+	b.elements = append(b.elements, e)
 }
 
 // Track returns the builders underlying track
@@ -165,9 +164,8 @@ func (b *Builder) stop() {
 		return
 	}
 	b.stopped = true
-	for eid, e := range b.elements {
+	for _, e := range b.elements {
 		e.Close()
-		delete(b.elements, eid)
 	}
 	if b.onStopHandler != nil {
 		b.onStopHandler()
@@ -179,8 +177,8 @@ func (b *Builder) stats() string {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	info := fmt.Sprintf("      track: %s\n", b.track.ID())
-	for id := range b.elements {
-		info += fmt.Sprintf("        element: %s\n", id)
+	for _, e := range b.elements {
+		info += fmt.Sprintf("        element: %T\n", e)
 	}
 	return info
 }

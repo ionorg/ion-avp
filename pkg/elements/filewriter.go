@@ -7,11 +7,6 @@ import (
 	"github.com/pion/ion-avp/pkg/log"
 )
 
-const (
-	// IDFileWriter .
-	IDFileWriter = "FileWriter"
-)
-
 // FileWriterConfig .
 type FileWriterConfig struct {
 	ID   string
@@ -44,19 +39,14 @@ func NewFileWriter(config FileWriterConfig) *FileWriter {
 	return w
 }
 
-// ID for FileWriter
-func (w *FileWriter) ID() string {
-	return IDFileWriter
-}
-
 func (w *FileWriter) Write(sample *avp.Sample) error {
 	_, err := w.file.Write(sample.Payload.([]byte))
 	return err
 }
 
 // Attach attach a child element
-func (w *FileWriter) Attach(e avp.Element) error {
-	return ErrAttachNotSupported
+func (w *FileWriter) Attach(e avp.Element) {
+	log.Warnf("FileWriter.Attach() not supported")
 }
 
 // Close FileWriter
