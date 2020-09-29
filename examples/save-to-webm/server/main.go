@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path"
 
@@ -27,11 +26,7 @@ func createWebmSaver(sid, pid, tid string, config []byte) avp.Element {
 	webm := elements.NewWebmSaver(elements.WebmSaverConfig{
 		ID: pid,
 	})
-	err := webm.Attach(filewriter)
-	if err != nil {
-		log.Fatalf("error attaching filewriter to webm %s", err)
-		return nil
-	}
+	webm.Attach(filewriter)
 	return webm
 }
 

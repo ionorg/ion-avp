@@ -10,11 +10,6 @@ import (
 	"github.com/pion/ion-avp/pkg/log"
 )
 
-const (
-	// IDWebmSaver .
-	IDWebmSaver = "WebmSaver"
-)
-
 // WebmSaverConfig .
 type WebmSaverConfig struct {
 	ID string
@@ -38,11 +33,6 @@ func NewWebmSaver(config WebmSaverConfig) *WebmSaver {
 	}
 }
 
-// ID of element
-func (s *WebmSaver) ID() string {
-	return IDWebmSaver
-}
-
 // Write sample to webmsaver
 func (s *WebmSaver) Write(sample *avp.Sample) error {
 	if sample.Type == avp.TypeVP8 {
@@ -54,8 +44,8 @@ func (s *WebmSaver) Write(sample *avp.Sample) error {
 }
 
 // Attach attach a child element
-func (s *WebmSaver) Attach(e avp.Element) error {
-	return s.sampleWriter.Attach(e)
+func (s *WebmSaver) Attach(e avp.Element) {
+	s.sampleWriter.Attach(e)
 }
 
 // Close Close the WebmSaver
@@ -159,24 +149,17 @@ func (s *WebmSaver) initWriter(width, height int) {
 
 // SampleWriter for writing samples
 type SampleWriter struct {
-	children map[string]avp.Element
+	children []avp.Element
 }
 
 // NewSampleWriter creates a new sample writer
 func NewSampleWriter() *SampleWriter {
-	return &SampleWriter{
-		children: make(map[string]avp.Element),
-	}
+	return &SampleWriter{}
 }
 
 // Attach a child element
-func (w *SampleWriter) Attach(e avp.Element) error {
-	if w.children[e.ID()] == nil {
-		log.Infof("Transcribe.Attach element => %s", e.ID())
-		w.children[e.ID()] = e
-		return nil
-	}
-	return ErrElementAlreadyAttached
+func (w *SampleWriter) Attach(e avp.Element) {
+	w.children = append(w.children, e)
 }
 
 // Write sample

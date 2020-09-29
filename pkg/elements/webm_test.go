@@ -21,19 +21,14 @@ type BufWriter struct {
 func NewBufWriter() *BufWriter {
 	return &BufWriter{}
 }
-func (w *BufWriter) ID() string {
-	return ""
-}
 func (w *BufWriter) Write(sample *avp.Sample) error {
 	w.Lock()
 	defer w.Unlock()
 	_, err := w.buf.Write(sample.Payload.([]byte))
 	return err
 }
-func (w *BufWriter) Attach(e avp.Element) error {
-	return ErrAttachNotSupported
-}
-func (w *BufWriter) Close() {}
+func (w *BufWriter) Attach(e avp.Element) {}
+func (w *BufWriter) Close()               {}
 
 type Header struct {
 	Header  webm.EBMLHeader `ebml:"EBML"`
@@ -54,10 +49,9 @@ func TestWebMSaver_BlockWriterInit(t *testing.T) {
 	})
 
 	writer := NewBufWriter()
-	err := saver.Attach(writer)
-	assert.NoError(t, err)
+	saver.Attach(writer)
 
-	err = saver.Write(&avp.Sample{
+	err := saver.Write(&avp.Sample{
 		Type:    avp.TypeVP8,
 		Payload: rawKeyframePkt,
 	})
