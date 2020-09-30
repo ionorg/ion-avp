@@ -64,7 +64,7 @@ func (dec *Decoder) write() error {
 	img := vpx.CodecGetFrame(dec.ctx, &iter)
 	return dec.Node.Write(&avp.Sample{
 		Type:    TypeYCbCr,
-		Payload: img,
+		Payload: img.ImageYCbCr(),
 	})
 }
 
