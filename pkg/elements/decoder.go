@@ -13,6 +13,7 @@ type Decoder struct {
 	Node
 	ctx   *vpx.CodecCtx
 	iface *vpx.CodecIface
+	run   bool
 	async bool
 }
 
@@ -33,6 +34,16 @@ func NewDecoder(fps uint) *Decoder {
 
 func (dec *Decoder) Write(sample *avp.Sample) error {
 	if sample.Type == avp.TypeVP8 {
+		payload := sample.Payload.([]byte)
+
+		if !dec.run {
+			videoKeyframe := (payload[0]&0x1 == 0)
+			if !videoKeyframe {
+				return nil
+			}
+			dec.run = true
+		}
+
 		if dec.iface == nil {
 			dec.iface = vpx.DecoderIfaceVP8()
 			err := vpx.Error(vpx.CodecDecInitVer(dec.ctx, dec.iface, nil, 0, vpx.DecoderABIVersion))
@@ -41,7 +52,6 @@ func (dec *Decoder) Write(sample *avp.Sample) error {
 			}
 		}
 
-		payload := sample.Payload.([]byte)
 		err := vpx.Error(vpx.CodecDecode(dec.ctx, string(payload), uint32(len(payload)), nil, 0))
 		if err != nil {
 			return err
@@ -56,7 +66,7 @@ func (dec *Decoder) Write(sample *avp.Sample) error {
 }
 
 func (dec *Decoder) Close() {
-	dec.async = false
+	dec.run = false
 }
 
 func (dec *Decoder) write() error {
@@ -73,9 +83,9 @@ func (dec *Decoder) write() error {
 }
 
 func (dec *Decoder) producer(fps uint) {
-	ticker := time.NewTicker(time.Duration(1/fps) * time.Second)
+	ticker := time.NewTicker(time.Duration((1/fps)*1000) * time.Millisecond)
 	for range ticker.C {
-		if !dec.async {
+		if !dec.run {
 			return
 		}
 
