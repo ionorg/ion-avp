@@ -55,6 +55,10 @@ func (dec *Decoder) Write(sample *avp.Sample) error {
 	return nil
 }
 
+func (dec *Decoder) Close() {
+	dec.async = false
+}
+
 func (dec *Decoder) write() error {
 	var iter vpx.CodecIter
 	img := vpx.CodecGetFrame(dec.ctx, &iter)
@@ -67,6 +71,10 @@ func (dec *Decoder) write() error {
 func (dec *Decoder) producer(fps uint) {
 	ticker := time.NewTicker(time.Duration(1/fps) * time.Second)
 	for range ticker.C {
+		if !dec.async {
+			return
+		}
+
 		err := dec.write()
 		if err != nil {
 			log.Errorf("%s", err)
