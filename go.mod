@@ -14,7 +14,7 @@ require (
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	github.com/xlab/libvpx-go v0.0.0-20200321114045-4c41f8a7acef
+	github.com/xlab/libvpx-go v0.0.0-20170905165204-3e7196e9579c
 	golang.org/x/exp v0.0.0-20191030013958-a1ab85dbe136
 	golang.org/x/image v0.0.0-20200801110659-972c09e46d76
 	google.golang.org/grpc v1.32.0

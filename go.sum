@@ -444,6 +444,8 @@ github.com/viant/assertly v0.4.8/go.mod h1:aGifi++jvCrUaklKEKT0BU95igDNaqkvz+49u
 github.com/viant/toolbox v0.24.0/go.mod h1:OxMCG57V0PXuIP2HNQrtJf2CjqdmbrOx5EkMILuUhzM=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 h1:eY9dn8+vbi4tKz5Qo6v2eYzo7kUS51QINcR5jNpbZS8=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
+github.com/xlab/libvpx-go v0.0.0-20170905165204-3e7196e9579c h1:qMk1Ba/f1PXzLpKHN8sETx4MeQJbVSBGir33nhDLvBc=
+github.com/xlab/libvpx-go v0.0.0-20170905165204-3e7196e9579c/go.mod h1:aDpRjomFsJw5z7oxScCKeB5NNGqibqdOgmpnOaEVMQs=
 github.com/xlab/libvpx-go v0.0.0-20200321114045-4c41f8a7acef h1:ce/8XfeTAcT9S0XLFjU0R144NTtTECO0agb2arZZ9E0=
 github.com/xlab/libvpx-go v0.0.0-20200321114045-4c41f8a7acef/go.mod h1:aDpRjomFsJw5z7oxScCKeB5NNGqibqdOgmpnOaEVMQs=
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
