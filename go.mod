@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/at-wat/ebml-go v0.11.0
+	github.com/dialup-inc/ascii v0.0.0-20191031215043-07c3fdeef4e5
 	github.com/golang/protobuf v1.4.2
 	github.com/pion/ion-sfu v1.0.19
 	github.com/pion/rtcp v1.2.4
@@ -13,6 +14,7 @@ require (
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
+	github.com/xlab/libvpx-go v0.0.0-20200321114045-4c41f8a7acef
 	golang.org/x/exp v0.0.0-20191030013958-a1ab85dbe136
 	golang.org/x/image v0.0.0-20200801110659-972c09e46d76
 	google.golang.org/grpc v1.32.0
