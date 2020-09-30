@@ -45,5 +45,7 @@ func (f *Filter) Attach(e avp.Element) {
 
 // Close Filter
 func (f *Filter) Close() {
-	log.Infof("Filter.Close() %s", f.id)
+	for _, e := range f.children {
+		e.Close()
+	}
 }
