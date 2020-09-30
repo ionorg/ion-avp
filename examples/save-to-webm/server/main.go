@@ -19,13 +19,8 @@ var (
 )
 
 func createWebmSaver(sid, pid, tid string, config []byte) avp.Element {
-	filewriter := elements.NewFileWriter(elements.FileWriterConfig{
-		ID:   pid,
-		Path: path.Join(conf.Pipeline.WebmSaver.Path, fmt.Sprintf("%s-%s.webm", sid, pid)),
-	})
-	webm := elements.NewWebmSaver(elements.WebmSaverConfig{
-		ID: pid,
-	})
+	filewriter := elements.NewFileWriter(path.Join(conf.Pipeline.WebmSaver.Path, fmt.Sprintf("%s-%s.webm", sid, pid)))
+	webm := elements.NewWebmSaver()
 	webm.Attach(filewriter)
 	return webm
 }
