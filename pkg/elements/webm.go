@@ -141,7 +141,7 @@ func (s *WebmSaver) initWriter(width, height int) {
 
 // SampleWriter for writing samples
 type SampleWriter struct {
-	children []avp.Element
+	Node
 }
 
 // NewSampleWriter creates a new sample writer
@@ -149,30 +149,21 @@ func NewSampleWriter() *SampleWriter {
 	return &SampleWriter{}
 }
 
-// Attach a child element
-func (w *SampleWriter) Attach(e avp.Element) {
-	w.children = append(w.children, e)
-}
-
 // Write sample
 func (w *SampleWriter) Write(p []byte) (n int, err error) {
-	for _, e := range w.children {
-		sample := &avp.Sample{
-			Type:    TypeBinary,
-			Payload: p,
-		}
-		err := e.Write(sample)
-		if err != nil {
-			log.Errorf("SampleWriter.Write error => %s", err)
-		}
+	err = w.Node.Write(&avp.Sample{
+		Type:    TypeBinary,
+		Payload: p,
+	})
+
+	if err != nil {
+		return 0, err
 	}
+
 	return len(p), nil
 }
 
-// Close writer
 func (w *SampleWriter) Close() error {
-	for _, e := range w.children {
-		e.Close()
-	}
+	w.Node.Close()
 	return nil
 }

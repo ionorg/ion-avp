@@ -9,6 +9,7 @@ import (
 
 // FileWriter instance
 type FileWriter struct {
+	Leaf
 	file *os.File
 }
 
@@ -30,11 +31,3 @@ func (w *FileWriter) Write(sample *avp.Sample) error {
 	_, err := w.file.Write(sample.Payload.([]byte))
 	return err
 }
-
-// Attach attach a child element
-func (w *FileWriter) Attach(e avp.Element) {
-	log.Warnf("FileWriter.Attach() not supported")
-}
-
-// Close FileWriter
-func (w *FileWriter) Close() {}

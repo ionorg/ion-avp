@@ -9,8 +9,8 @@ import (
 
 // Decoder instance
 type Decoder struct {
-	decoder  *vp8.Decoder
-	children []avp.Element
+	Node
+	decoder *vp8.Decoder
 }
 
 // NewDecoder instance. Decoder takes as input VP8 keyframes
@@ -38,29 +38,11 @@ func (d *Decoder) Write(sample *avp.Sample) error {
 			return err
 		}
 
-		for _, e := range d.children {
-			sample := &avp.Sample{
-				Type:    TypeYCbCr,
-				Payload: img,
-			}
-			err := e.Write(sample)
-			if err != nil {
-				return (err)
-			}
-		}
+		return d.Node.Write(&avp.Sample{
+			Type:    TypeYCbCr,
+			Payload: img,
+		})
 	}
 
 	return nil
-}
-
-// Attach attach a child element
-func (d *Decoder) Attach(e avp.Element) {
-	d.children = append(d.children, e)
-}
-
-// Close Decoder
-func (d *Decoder) Close() {
-	for _, e := range d.children {
-		e.Close()
-	}
 }
