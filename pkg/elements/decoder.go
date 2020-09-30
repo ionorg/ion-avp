@@ -1,48 +1,83 @@
 package elements
 
 import (
-	"bytes"
+	"time"
 
 	avp "github.com/pion/ion-avp/pkg"
-	"golang.org/x/image/vp8"
+	"github.com/pion/ion-avp/pkg/log"
+	"github.com/xlab/libvpx-go/vpx"
 )
 
 // Decoder instance
 type Decoder struct {
 	Node
-	decoder *vp8.Decoder
+	ctx   *vpx.CodecCtx
+	iface *vpx.CodecIface
+	async bool
 }
 
-// NewDecoder instance. Decoder takes as input VP8 keyframes
+// NewDecoder instance. Decoder takes as input VPX streams
 // and decodes it into a YCbCr image.
-func NewDecoder() *Decoder {
-	return &Decoder{
-		decoder: vp8.NewDecoder(),
+func NewDecoder(fps uint) *Decoder {
+	dec := &Decoder{
+		ctx: vpx.NewCodecCtx(),
 	}
+
+	if fps > 0 {
+		dec.async = true
+		go dec.producer(fps)
+	}
+
+	return dec
 }
 
-func (d *Decoder) Write(sample *avp.Sample) error {
+func (dec *Decoder) Write(sample *avp.Sample) error {
 	if sample.Type == avp.TypeVP8 {
-		payload := sample.Payload.([]byte)
-
-		d.decoder.Init(bytes.NewReader(payload), len(payload))
-
-		// Decode header
-		if _, err := d.decoder.DecodeFrameHeader(); err != nil {
-			return err
+		if dec.iface == nil {
+			dec.iface = vpx.DecoderIfaceVP8()
+			err := vpx.Error(vpx.CodecDecInitVer(dec.ctx, dec.iface, nil, 0, vpx.DecoderABIVersion))
+			if err != nil {
+				log.Errorf("%s", err)
+			}
 		}
 
-		// Decode Frame
-		img, err := d.decoder.DecodeFrame()
+		payload := sample.Payload.([]byte)
+		err := vpx.Error(vpx.CodecDecode(dec.ctx, string(payload), uint32(len(payload)), nil, 0))
 		if err != nil {
 			return err
 		}
 
-		return d.Node.Write(&avp.Sample{
-			Type:    TypeYCbCr,
-			Payload: img,
-		})
+		if !dec.async {
+			return dec.write()
+		}
 	}
 
 	return nil
+}
+
+func (dec *Decoder) Close() {
+	dec.async = false
+}
+
+func (dec *Decoder) write() error {
+	var iter vpx.CodecIter
+	img := vpx.CodecGetFrame(dec.ctx, &iter)
+	return dec.Node.Write(&avp.Sample{
+		Type:    TypeYCbCr,
+		Payload: img,
+	})
+}
+
+func (dec *Decoder) producer(fps uint) {
+	ticker := time.NewTicker(time.Duration(1/fps) * time.Second)
+	for range ticker.C {
+		if !dec.async {
+			return
+		}
+
+		err := dec.write()
+		if err != nil {
+			log.Errorf("%s", err)
+		}
+	}
 }
