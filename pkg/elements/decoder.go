@@ -67,6 +67,7 @@ func (dec *Decoder) Write(sample *avp.Sample) error {
 
 func (dec *Decoder) Close() {
 	dec.run = false
+	dec.Node.Close()
 }
 
 func (dec *Decoder) write() error {

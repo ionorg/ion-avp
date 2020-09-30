@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"image"
+	"image/color"
 	"image/jpeg"
 
 	avp "github.com/pion/ion-avp/pkg"
@@ -28,13 +29,13 @@ func NewConverter(typ int) *Converter {
 
 func (c *Converter) Write(sample *avp.Sample) error {
 	var out []byte
-	switch sample.Type {
-	case TypeYCbCr:
-		payload := sample.Payload.(image.Image)
+	img := sample.Payload.(image.Image)
+	switch img.ColorModel() {
+	case color.YCbCrModel:
 		switch c.typ {
 		case TypeJPEG:
 			buf := new(bytes.Buffer)
-			if err := jpeg.Encode(buf, payload, nil); err != nil {
+			if err := jpeg.Encode(buf, img, nil); err != nil {
 				return err
 			}
 			out = buf.Bytes()
