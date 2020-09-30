@@ -79,5 +79,7 @@ func (c *Converter) Attach(e avp.Element) {
 
 // Close Converter
 func (c *Converter) Close() {
-	log.Infof("Converter.Close() %s", c.id)
+	for _, e := range c.children {
+		e.Close()
+	}
 }

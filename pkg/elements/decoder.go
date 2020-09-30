@@ -76,5 +76,7 @@ func (d *Decoder) Attach(e avp.Element) {
 
 // Close Decoder
 func (d *Decoder) Close() {
-	log.Infof("Decoder.Close() %s", d.id)
+	for _, e := range d.children {
+		e.Close()
+	}
 }
