@@ -7,36 +7,23 @@ import (
 	"github.com/pion/ion-avp/pkg/log"
 )
 
-// FileWriterConfig .
-type FileWriterConfig struct {
-	ID   string
-	Path string
-}
-
 // FileWriter instance
 type FileWriter struct {
-	id   string
 	file *os.File
 }
 
 // NewFileWriter instance
-func NewFileWriter(config FileWriterConfig) *FileWriter {
-	w := &FileWriter{
-		id: config.ID,
-	}
-
-	f, err := os.OpenFile(config.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+func NewFileWriter(path string) *FileWriter {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 
 	if err != nil {
 		log.Errorf("error initializing filewriter: %s", err)
 		return nil
 	}
 
-	w.file = f
-
-	log.Infof("NewFileWriter with config: %+v", config)
-
-	return w
+	return &FileWriter{
+		file: f,
+	}
 }
 
 func (w *FileWriter) Write(sample *avp.Sample) error {
@@ -50,6 +37,4 @@ func (w *FileWriter) Attach(e avp.Element) {
 }
 
 // Close FileWriter
-func (w *FileWriter) Close() {
-	log.Infof("FileWriter.Close() %s", w.id)
-}
+func (w *FileWriter) Close() {}

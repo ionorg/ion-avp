@@ -10,15 +10,9 @@ import (
 	"github.com/pion/ion-avp/pkg/log"
 )
 
-// WebmSaverConfig .
-type WebmSaverConfig struct {
-	ID string
-}
-
 // WebmSaver Module for saving rtp streams to webm
 type WebmSaver struct {
 	sync.Mutex
-	id                             string
 	closed                         bool
 	audioWriter, videoWriter       webm.BlockWriteCloser
 	audioTimestamp, videoTimestamp uint32
@@ -26,9 +20,8 @@ type WebmSaver struct {
 }
 
 // NewWebmSaver Initialize a new webm saver
-func NewWebmSaver(config WebmSaverConfig) *WebmSaver {
+func NewWebmSaver() *WebmSaver {
 	return &WebmSaver{
-		id:           config.ID,
 		sampleWriter: NewSampleWriter(),
 	}
 }
@@ -52,7 +45,6 @@ func (s *WebmSaver) Attach(e avp.Element) {
 func (s *WebmSaver) Close() {
 	s.Lock()
 	defer s.Unlock()
-	log.Infof("WebmSaver.Close() => %s", s.id)
 
 	if s.closed {
 		return

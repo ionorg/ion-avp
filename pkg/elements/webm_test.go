@@ -44,9 +44,7 @@ var rawKeyframePkt = []byte{
 var rawOpusPkt = []byte{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x90, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x90}
 
 func TestWebMSaver_BlockWriterInit(t *testing.T) {
-	saver := NewWebmSaver(WebmSaverConfig{
-		ID: "id",
-	})
+	saver := NewWebmSaver()
 
 	writer := NewBufWriter()
 	saver.Attach(writer)
