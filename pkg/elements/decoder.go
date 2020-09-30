@@ -62,10 +62,14 @@ func (dec *Decoder) Close() {
 func (dec *Decoder) write() error {
 	var iter vpx.CodecIter
 	img := vpx.CodecGetFrame(dec.ctx, &iter)
-	return dec.Node.Write(&avp.Sample{
-		Type:    TypeYCbCr,
-		Payload: img.ImageYCbCr(),
-	})
+	for img != nil {
+		img.Deref()
+		return dec.Node.Write(&avp.Sample{
+			Type:    TypeYCbCr,
+			Payload: img.ImageYCbCr(),
+		})
+	}
+	return nil
 }
 
 func (dec *Decoder) producer(fps uint) {
