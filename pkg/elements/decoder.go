@@ -13,15 +13,17 @@ type Decoder struct {
 	Node
 	ctx   *vpx.CodecCtx
 	iface *vpx.CodecIface
+	typ   int
 	run   bool
 	async bool
 }
 
 // NewDecoder instance. Decoder takes as input VPX streams
 // and decodes it into a YCbCr image.
-func NewDecoder(fps uint) *Decoder {
+func NewDecoder(fps uint, outType int) *Decoder {
 	dec := &Decoder{
 		ctx: vpx.NewCodecCtx(),
+		typ: outType,
 	}
 
 	if fps > 0 {
@@ -75,10 +77,18 @@ func (dec *Decoder) write() error {
 	img := vpx.CodecGetFrame(dec.ctx, &iter)
 	for img != nil {
 		img.Deref()
-		return dec.Node.Write(&avp.Sample{
-			Type:    TypeYCbCr,
-			Payload: img.ImageYCbCr(),
-		})
+
+		if dec.typ == TypeYCbCr {
+			return dec.Node.Write(&avp.Sample{
+				Type:    TypeYCbCr,
+				Payload: img.ImageYCbCr(),
+			})
+		} else if dec.typ == TypeRGBA {
+			return dec.Node.Write(&avp.Sample{
+				Type:    TypeRGBA,
+				Payload: img.ImageRGBA(),
+			})
+		}
 	}
 	return nil
 }

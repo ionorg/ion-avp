@@ -15,6 +15,7 @@ const (
 	TypeWebM     = 103
 	TypeYCbCr    = 104
 	TypeJPEG     = 105
+	TypeRGBA     = 106
 )
 
 var (
