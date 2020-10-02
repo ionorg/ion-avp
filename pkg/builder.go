@@ -124,11 +124,13 @@ func (b *Builder) build() {
 			if sample == nil {
 				break
 			}
+
 			b.out <- &Sample{
 				Type:           int(b.track.Codec().Type),
 				SequenceNumber: b.sequence,
 				Timestamp:      timestamp,
 				Payload:        sample.Data,
+				TrackID:        b.track.ID(),
 			}
 			b.sequence++
 		}
