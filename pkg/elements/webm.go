@@ -2,6 +2,7 @@ package elements
 
 import (
 	"sync"
+	"time"
 
 	"github.com/at-wat/ebml-go/mkvcore"
 	"github.com/at-wat/ebml-go/webm"
@@ -105,6 +106,15 @@ func (s *WebmSaver) pushVP8(sample *avp.Sample) {
 }
 
 func (s *WebmSaver) initWriter(width, height int) {
+	options := []mkvcore.BlockWriterOption{
+		mkvcore.WithSegmentInfo(&webm.Info{
+			TimecodeScale: webm.DefaultSegmentInfo.TimecodeScale,
+			MuxingApp:     webm.DefaultSegmentInfo.MuxingApp,
+			WritingApp:    webm.DefaultSegmentInfo.WritingApp,
+			DateUTC:       time.Now(),
+		}),
+		mkvcore.WithSeekHead(true),
+	}
 	ws, err := webm.NewSimpleBlockWriter(s.sampleWriter,
 		[]webm.TrackEntry{
 			{
@@ -130,7 +140,7 @@ func (s *WebmSaver) initWriter(width, height int) {
 					PixelHeight: uint64(height),
 				},
 			},
-		}, mkvcore.WithSeekHead(true))
+		}, options...)
 	if err != nil {
 		log.Errorf("init writer err: %s", err)
 	}
