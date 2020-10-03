@@ -12,12 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: install deps
-        run: |
-          sudo apt-get update -qq \
-          && sudo apt-get install --no-install-recommends -y \
-            libvpx-dev
-
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v1
         env:

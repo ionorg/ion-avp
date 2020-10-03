@@ -1,3 +1,5 @@
+// +build libvpx
+
 package elements
 
 import (
