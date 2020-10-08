@@ -385,6 +385,8 @@ github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 h1:eY9dn8+vbi4tKz5
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xlab/libvpx-go v0.0.0-20170905165204-3e7196e9579c h1:qMk1Ba/f1PXzLpKHN8sETx4MeQJbVSBGir33nhDLvBc=
 github.com/xlab/libvpx-go v0.0.0-20170905165204-3e7196e9579c/go.mod h1:aDpRjomFsJw5z7oxScCKeB5NNGqibqdOgmpnOaEVMQs=
+github.com/xlab/libvpx-go v0.0.0-20200321114045-4c41f8a7acef h1:ce/8XfeTAcT9S0XLFjU0R144NTtTECO0agb2arZZ9E0=
+github.com/xlab/libvpx-go v0.0.0-20200321114045-4c41f8a7acef/go.mod h1:aDpRjomFsJw5z7oxScCKeB5NNGqibqdOgmpnOaEVMQs=
 go.etcd.io/bbolt v1.3.2 h1:Z/90sZLPOeCy2PwprqkFa25PdkusRzaj9P8zm/KNyvk=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.opencensus.io v0.18.0/go.mod h1:vKdFvxhtzZ9onBp9VKHK8z/sRpBMnKAsufL7wlDrCOA=
