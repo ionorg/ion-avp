@@ -22,7 +22,7 @@ type Decoder struct {
 
 // NewDecoder instance. Decoder takes as input VPX streams
 // and decodes it into a YCbCr image.
-func NewDecoder(fps uint, outType int) *Decoder {
+func NewDecoder(fps float32, outType int) *Decoder {
 	dec := &Decoder{
 		ctx: vpx.NewCodecCtx(),
 		typ: outType,
@@ -95,7 +95,7 @@ func (dec *Decoder) write() error {
 	return nil
 }
 
-func (dec *Decoder) producer(fps uint) {
+func (dec *Decoder) producer(fps float32) {
 	ticker := time.NewTicker(time.Duration((1/fps)*1000) * time.Millisecond)
 	for range ticker.C {
 		if !dec.run {
