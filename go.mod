@@ -1,6 +1,6 @@
 module github.com/pion/ion-avp
 
-go 1.13
+go 1.15
 
 require (
 	github.com/at-wat/ebml-go v0.11.0
@@ -13,7 +13,7 @@ require (
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	github.com/xlab/libvpx-go v0.0.0-20170905165204-3e7196e9579c
+	github.com/xlab/libvpx-go v0.0.0-20200321114045-4c41f8a7acef
 	golang.org/x/exp v0.0.0-20200924195034-c827fd4f18b9
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.23.0
