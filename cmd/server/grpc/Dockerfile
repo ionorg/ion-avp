@@ -18,7 +18,7 @@ COPY pkg/ $GOPATH/src/github.com/pion/ion-avp/pkg
 COPY cmd/ $GOPATH/src/github.com/pion/ion-avp/cmd
 
 WORKDIR $GOPATH/src/github.com/pion/ion-avp/cmd/server/grpc
-RUN CGO_ENABLED=0 GOOS=linux go build -tags libvpx -a -installsuffix cgo -o /avp .
+RUN GOOS=linux go build -tags libvpx -a -installsuffix cgo -o /avp .
 
 FROM alpine:3.12.0
 
