@@ -10,9 +10,9 @@ const (
 
 // Sample of audio or video
 type Sample struct {
+	ID             string
 	Type           int
 	Timestamp      uint32
 	SequenceNumber uint16
 	Payload        interface{}
-	TrackID        string
 }

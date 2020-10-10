@@ -126,11 +126,11 @@ func (b *Builder) build() {
 			}
 
 			b.out <- &Sample{
+				ID:             b.track.ID(),
 				Type:           int(b.track.Codec().Type),
 				SequenceNumber: b.sequence,
 				Timestamp:      timestamp,
 				Payload:        sample.Data,
-				TrackID:        b.track.ID(),
 			}
 			b.sequence++
 		}

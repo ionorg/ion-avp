@@ -61,3 +61,34 @@ func (e *Leaf) Attach(el avp.Element) {
 }
 
 func (e *Leaf) Close() {}
+
+type Pipeline struct {
+	head avp.Element
+	tail avp.Element
+}
+
+func NewPipeline(elements []avp.Element) *Pipeline {
+	cur := elements[0]
+	p := &Pipeline{head: cur}
+
+	for i := 1; i < len(elements); i++ {
+		cur.Attach(elements[i])
+		cur = elements[i]
+	}
+
+	p.tail = cur
+
+	return p
+}
+
+func (p *Pipeline) Write(sample *avp.Sample) error {
+	return p.head.Write(sample)
+}
+
+func (p *Pipeline) Attach(el avp.Element) {
+	p.tail.Attach(el)
+}
+
+func (p *Pipeline) Close() {
+	p.head.Close()
+}
