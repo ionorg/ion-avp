@@ -89,7 +89,7 @@ func TestNewWebRTCTransport(t *testing.T) {
 		close(closed)
 	})
 
-	transport.Process("123", "tid", "eid", []byte{})
+	transport.Process("123", "tid", "test-eid", []byte{})
 
 	signal(t, transport, remote)
 
