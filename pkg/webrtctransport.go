@@ -181,6 +181,11 @@ func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) {
 	defer t.mu.Unlock()
 
 	e := registry.GetElement(eid)
+	if e == nil {
+		log.Errorf("element not found: %s", eid)
+		return
+	}
+
 	b := t.builders[tid]
 	if b == nil {
 		log.Debugf("builder not found for track %s. queuing.", tid)
