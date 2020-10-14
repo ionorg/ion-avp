@@ -6,7 +6,7 @@ require (
 	github.com/at-wat/ebml-go v0.11.0
 	github.com/golang/protobuf v1.4.2
 	github.com/lucsky/cuid v1.0.2
-	github.com/pion/ion-sfu v1.0.22
+	github.com/pion/ion-sfu v1.0.24
 	github.com/pion/rtcp v1.2.4
 	github.com/pion/rtp v1.6.1
 	github.com/pion/sdp/v2 v2.4.0
