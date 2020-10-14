@@ -1,15 +1,24 @@
 package avp
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/pion/ion-avp/pkg/log"
 	"github.com/pion/rtcp"
+	"github.com/pion/sdp/v2"
 
 	"github.com/pion/webrtc/v3"
 )
+
+type SFUFeedback struct {
+	StreamID string `json:"streamId"`
+	Video    string `json:"video"`
+	Audio    bool   `json:"audio"`
+}
 
 type PendingProcess struct {
 	pid string
@@ -21,6 +30,7 @@ type WebRTCTransport struct {
 	id        string
 	pc        *webrtc.PeerConnection
 	mu        sync.RWMutex
+	feedback  *webrtc.DataChannel
 	builders  map[string]*Builder         // one builder per track
 	pending   map[string][]PendingProcess // maps track id to pending element constructors
 	processes map[string]Element          // existing processes
@@ -68,7 +78,7 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 		return nil
 	}
 
-	_, err = pc.CreateDataChannel("feedback", nil)
+	feedback, err := pc.CreateDataChannel("ion-sfu", nil)
 	if err != nil {
 		log.Errorf("Error creating peer data channel: %s", err)
 		return nil
@@ -76,6 +86,7 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 
 	t := &WebRTCTransport{
 		id:        id,
+		feedback:  feedback,
 		pc:        pc,
 		builders:  make(map[string]*Builder),
 		pending:   make(map[string][]PendingProcess),
@@ -222,6 +233,38 @@ func (t *WebRTCTransport) SetLocalDescription(desc webrtc.SessionDescription) er
 
 // SetRemoteDescription sets the SessionDescription of the remote peer
 func (t *WebRTCTransport) SetRemoteDescription(desc webrtc.SessionDescription) error {
+	parsed := sdp.SessionDescription{}
+	if err := parsed.Unmarshal([]byte(desc.SDP)); err == nil {
+		for _, m := range parsed.MediaDescriptions {
+			if msid, ok := m.Attribute(sdp.AttrKeyMsid); ok {
+				split := strings.Split(msid, " ")
+				if len(split) != 2 {
+					log.Debugf("Invalid msid: %+v", msid)
+					continue
+				}
+
+				mid := split[0]
+
+				// Request unmute from sfu
+				req := SFUFeedback{
+					StreamID: mid,
+					Video:    "high",
+					Audio:    true,
+				}
+				msg, err := json.Marshal(req)
+				if err != nil {
+					log.Errorf("error marshalling feedback json")
+				}
+				err = t.feedback.Send(msg)
+				if err != nil {
+					log.Errorf("error sending feedback request")
+				}
+			}
+		}
+	} else {
+		log.Errorf("error parsing sdp media")
+	}
+
 	return t.pc.SetRemoteDescription(desc)
 }
 
