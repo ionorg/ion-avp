@@ -15,6 +15,7 @@ type Decoder struct {
 	Node
 	ctx   *vpx.CodecCtx
 	iface *vpx.CodecIface
+	fps   float32
 	typ   int
 	run   bool
 	async bool
@@ -26,11 +27,7 @@ func NewDecoder(fps float32, outType int) *Decoder {
 	dec := &Decoder{
 		ctx: vpx.NewCodecCtx(),
 		typ: outType,
-	}
-
-	if fps > 0 {
-		dec.async = true
-		go dec.producer(fps)
+		fps: fps,
 	}
 
 	return dec
@@ -42,10 +39,16 @@ func (dec *Decoder) Write(sample *avp.Sample) error {
 
 		if !dec.run {
 			videoKeyframe := (payload[0]&0x1 == 0)
+
 			if !videoKeyframe {
 				return nil
 			}
 			dec.run = true
+
+			if dec.fps > 0 {
+				dec.async = true
+				go dec.producer(dec.fps)
+			}
 		}
 
 		if dec.iface == nil {
@@ -77,6 +80,7 @@ func (dec *Decoder) Close() {
 func (dec *Decoder) write() error {
 	var iter vpx.CodecIter
 	img := vpx.CodecGetFrame(dec.ctx, &iter)
+
 	for img != nil {
 		img.Deref()
 
