@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	grpc "github.com/pion/ion-avp/cmd/server/grpc"
+	grpc "github.com/pion/ion-avp/cmd/signal/grpc/server"
 	avp "github.com/pion/ion-avp/pkg"
 	"github.com/pion/ion-avp/pkg/elements"
 	"github.com/spf13/viper"
@@ -78,10 +78,9 @@ func main() {
 		os.Exit(-1)
 	}
 
-	registry := avp.NewRegistry()
-	registry.AddElement("webmsaver", createWebmSaver)
-	avp.Init(registry)
+	grpc.NewServer(addr, conf, map[string]avp.ElementFun{
+		"webmsaver": createWebmSaver,
+	})
 
-	grpc.NewServer(addr, conf)
 	select {}
 }
