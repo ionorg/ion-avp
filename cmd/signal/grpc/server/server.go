@@ -4,7 +4,7 @@ import (
 	"io"
 	"net"
 
-	pb "github.com/pion/ion-avp/cmd/server/grpc/proto"
+	pb "github.com/pion/ion-avp/cmd/signal/grpc/proto"
 	avp "github.com/pion/ion-avp/pkg"
 	"github.com/pion/ion-avp/pkg/log"
 	"google.golang.org/grpc"
@@ -14,18 +14,20 @@ import (
 
 type server struct {
 	pb.UnimplementedAVPServer
-	avp *avp.AVP
+	avp *AVP
 }
 
 // NewServer creates a new grpc avp server
-func NewServer(addr string, conf avp.Config) *grpc.Server {
+func NewServer(addr string, conf avp.Config, elems map[string]avp.ElementFun) *grpc.Server {
+	log.Init(conf.Log.Level)
+
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Panicf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
 	pb.RegisterAVPServer(s, &server{
-		avp: avp.NewAVP(conf),
+		avp: NewAVP(conf, elems),
 	})
 
 	log.Infof("--- AVP Node Listening at %s ---", addr)

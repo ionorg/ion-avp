@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	pb "github.com/pion/ion-avp/cmd/server/grpc/proto"
+	pb "github.com/pion/ion-avp/cmd/signal/grpc/proto"
 	"google.golang.org/grpc"
 )
 

@@ -118,5 +118,5 @@ var _AVP_serviceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "cmd/server/grpc/proto/avp.proto",
+	Metadata: "cmd/signal/grpc/proto/avp.proto",
 }

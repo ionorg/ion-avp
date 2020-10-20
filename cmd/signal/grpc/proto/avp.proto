@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/pion/ion-avp/cmd/server/grpc/proto";
+option go_package = "github.com/pion/ion-avp/cmd/signal/grpc/proto";
 
 package avp;
 

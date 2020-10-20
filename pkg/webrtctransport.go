@@ -279,7 +279,8 @@ func (t *WebRTCTransport) OnICECandidate(f func(c *webrtc.ICECandidate)) {
 	t.pc.OnICECandidate(f)
 }
 
-func (t *WebRTCTransport) stats() string {
+// Stats transport statistics
+func (t *WebRTCTransport) Stats() string {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 

@@ -11,7 +11,7 @@ clean:
 	rm -rf bin
 
 build_grpc: go_deps
-	go build -o bin/avp $(GO_LDFLAGS) ./cmd/server/grpc/main.go
+	go build -o bin/avp $(GO_LDFLAGS) ./cmd/signal/grpc/main.go
 
 test: go_deps
 	go test \

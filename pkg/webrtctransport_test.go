@@ -78,9 +78,7 @@ func TestNewWebRTCTransport(t *testing.T) {
 	_, err = remote.AddTrack(track)
 	assert.NoError(t, err)
 
-	var registry = NewRegistry()
-	registry.AddElement("test-eid", testFunc)
-	Init(registry)
+	Init(map[string]ElementFun{"test-eid": testFunc})
 
 	closed := make(chan struct{})
 	transport := NewWebRTCTransport("id", Config{})
@@ -95,7 +93,7 @@ func TestNewWebRTCTransport(t *testing.T) {
 
 	expectedString := []string{"track", "pending"}
 
-	stats := transport.stats()
+	stats := transport.Stats()
 	for _, expected := range expectedString {
 		assert.Contains(t, stats, expected)
 	}
@@ -124,9 +122,7 @@ func TestNewWebRTCTransportWithBuilder(t *testing.T) {
 
 	onTransportCloseFired, onTransportCloseFunc := context.WithCancel(context.Background())
 
-	registry := NewRegistry()
-	registry.AddElement("test-eid", testFunc)
-	Init(registry)
+	Init(map[string]ElementFun{"test-eid": testFunc})
 
 	transport := NewWebRTCTransport("id", Config{})
 	assert.NotNil(t, transport)
@@ -160,9 +156,7 @@ func TestNewWebRTCTransportWithOnNegotiation(t *testing.T) {
 	remote, err := api.NewPeerConnection(webrtc.Configuration{})
 	assert.NoError(t, err)
 
-	registry := NewRegistry()
-	registry.AddElement("test-eid", testFunc)
-	Init(registry)
+	Init(map[string]ElementFun{"test-eid": testFunc})
 
 	transport := NewWebRTCTransport("id", Config{})
 	assert.NotNil(t, transport)
@@ -206,9 +200,7 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	sender, err := remote.AddTrack(track)
 	assert.NoError(t, err)
 
-	registry := NewRegistry()
-	registry.AddElement("test-eid", testFunc)
-	Init(registry)
+	Init(map[string]ElementFun{"test-eid": testFunc})
 
 	transport := NewWebRTCTransport("id", Config{})
 	assert.NotNil(t, transport)
@@ -233,7 +225,7 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 
 	transport.Process("123", tid, "test-eid", []byte{})
 	expectedStrings := []string{"track", "element"}
-	stats := transport.stats()
+	stats := transport.Stats()
 	for _, expected := range expectedStrings {
 		assert.Contains(t, stats, expected)
 	}
