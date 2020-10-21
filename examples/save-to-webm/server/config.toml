@@ -3,7 +3,7 @@
 # webm output path
 path = "./out/"
 
-[avp.pipeline.samplebuilder]
+[avp.samplebuilder]
 # max late for audio rtp packets
 audiomaxlate = 100
 # max late for video rtp packets

@@ -1,4 +1,4 @@
-[pipeline.samplebuilder]
+[samplebuilder]
 # max late for audio rtp packets
 audiomaxlate = 100
 # max late for video rtp packets
