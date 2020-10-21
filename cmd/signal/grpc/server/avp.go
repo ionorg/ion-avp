@@ -3,14 +3,8 @@ package server
 import (
 	"context"
 	"sync"
-	"time"
 
 	avp "github.com/pion/ion-avp/pkg"
-	"github.com/pion/ion-avp/pkg/log"
-)
-
-const (
-	statCycle = 5 * time.Second
 )
 
 // AVP represents an avp instance
@@ -28,8 +22,6 @@ func NewAVP(c avp.Config, elems map[string]avp.ElementFun) *AVP {
 	}
 
 	avp.Init(elems)
-
-	go a.stats()
 
 	return a
 }
@@ -53,24 +45,4 @@ func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string, conf
 
 	t := c.GetTransport(sid)
 	t.Process(pid, tid, eid, config)
-}
-
-// show all avp stats
-func (a *AVP) stats() {
-	t := time.NewTicker(statCycle)
-	for range t.C {
-		info := "\n----------------stats-----------------\n"
-
-		a.mu.RLock()
-		if len(a.clients) == 0 {
-			a.mu.RUnlock()
-			continue
-		}
-
-		for _, client := range a.clients {
-			info += client.stats()
-		}
-		a.mu.RUnlock()
-		log.Infof(info)
-	}
 }
