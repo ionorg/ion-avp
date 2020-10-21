@@ -1,17 +1,18 @@
-[pipeline.samplebuilder]
+
+[webmsaver]
+# webm output path
+path = "./out/"
+
+[avp.pipeline.samplebuilder]
 # max late for audio rtp packets
 audiomaxlate = 100
 # max late for video rtp packets
 videomaxlate = 200
 
-[pipeline.webmsaver]
-# webm output path
-path = "./out/"
-
-[log]
+[avp.log]
 level = "info"
 
-[webrtc]
+[avp.webrtc]
 # PLI Cycle defines an interval (ms) on which the AVP will
 # request a keyframe. This PLI request will propogate to the
 # sender. It results in more bandwidth usage but will improve
@@ -22,9 +23,9 @@ pliCycle = 1000
 # Format: [min, max]   and max - min >= 100
 # portrange = [50000, 60000]
 # if sfu behind nat, set iceserver
-# [[webrtc.iceserver]]
+# [[avp.webrtc.iceserver]]
 # urls = ["stun:stun.stunprotocol.org:3478"]
-# [[webrtc.iceserver]]
+# [[avp.webrtc.iceserver]]
 # urls = ["turn:turn.awsome.org:3478"]
 # username = "awsome"
 # credential = "awsome"

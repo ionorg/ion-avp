@@ -4,7 +4,7 @@ save-to-webm demonstrates how to process media with an `avp`. in this example, t
 ## Instructions
 
 ### Start avp server
-Run `go run examples/save-to-webm/server/main.go`. This will start an avp instance that will process media tracks.
+Run `go run examples/save-to-webm/server/main.go -c examples/save-to-webm/server/config.toml`. This will start an avp instance that will process media tracks.
 
 ### Start avp client
 Run `go run examples/save-to-webm/client/main.go $SESSION_ID`. This will initiate a webrtc transport from avp to sfu for the given session. Tracks will start being relayed. When prompted, enter a track id to create a `WebmSaver` element which will start writing the track data to disk.
