@@ -4,36 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path"
 
 	grpc "github.com/pion/ion-avp/cmd/signal/grpc/server"
 	avp "github.com/pion/ion-avp/pkg"
-	"github.com/pion/ion-avp/pkg/elements"
 	"github.com/spf13/viper"
 )
 
-type webmsaver struct {
-	Path string `mapstructure:"path"`
-}
-
-// Config for server
-type Config struct {
-	Webmsaver webmsaver  `mapstructure:"webmsaver"`
-	Avp       avp.Config `mapstructure:"avp"`
-}
-
 var (
-	conf = Config{}
+	conf = avp.Config{}
 	file string
 	addr string
 )
-
-func createWebmSaver(sid, pid, tid string, config []byte) avp.Element {
-	filewriter := elements.NewFileWriter(path.Join(conf.Webmsaver.Path, fmt.Sprintf("%s-%s.webm", sid, pid)))
-	webm := elements.NewWebmSaver()
-	webm.Attach(filewriter)
-	return webm
-}
 
 func showHelp() {
 	fmt.Printf("Usage:%s {params}\n", os.Args[0])
@@ -88,9 +69,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	grpc.NewServer(addr, conf.Avp, map[string]avp.ElementFun{
-		"webmsaver": createWebmSaver,
+	grpc.NewServer(addr, conf, map[string]avp.ElementFun{
+		// fill in elements
 	})
-
-	select {}
 }

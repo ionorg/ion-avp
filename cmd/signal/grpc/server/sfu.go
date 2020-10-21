@@ -1,4 +1,4 @@
-package avp
+package server
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"io"
 	"sync"
 
+	avp "github.com/pion/ion-avp/pkg"
 	"github.com/pion/ion-avp/pkg/log"
 	sfu "github.com/pion/ion-sfu/cmd/signal/grpc/proto"
 	"github.com/pion/webrtc/v3"
@@ -19,14 +20,14 @@ type SFU struct {
 	ctx        context.Context
 	cancel     context.CancelFunc
 	client     sfu.SFUClient
-	config     Config
+	config     avp.Config
 	mu         sync.RWMutex
 	onCloseFn  func()
-	transports map[string]*WebRTCTransport
+	transports map[string]*avp.WebRTCTransport
 }
 
 // NewSFU intializes a new SFU client
-func NewSFU(addr string, config Config) *SFU {
+func NewSFU(addr string, config avp.Config) *SFU {
 	log.Infof("Connecting to sfu: %s", addr)
 	// Set up a connection to the sfu server.
 	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
@@ -41,12 +42,12 @@ func NewSFU(addr string, config Config) *SFU {
 		cancel:     cancel,
 		client:     sfu.NewSFUClient(conn),
 		config:     config,
-		transports: make(map[string]*WebRTCTransport),
+		transports: make(map[string]*avp.WebRTCTransport),
 	}
 }
 
 // GetTransport returns a webrtc transport for a session
-func (s *SFU) GetTransport(sid string) *WebRTCTransport {
+func (s *SFU) GetTransport(sid string) *avp.WebRTCTransport {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -77,7 +78,7 @@ func (s *SFU) OnClose(f func()) {
 
 // Join creates an sfu client and join the session.
 // All tracks will be relayed to the avp.
-func (s *SFU) join(sid string) *WebRTCTransport {
+func (s *SFU) join(sid string) *avp.WebRTCTransport {
 	log.Infof("Joining sfu session: %s", sid)
 
 	sfustream, err := s.client.Signal(s.ctx)
@@ -87,7 +88,7 @@ func (s *SFU) join(sid string) *WebRTCTransport {
 		return nil
 	}
 
-	t := NewWebRTCTransport(sid, s.config)
+	t := avp.NewWebRTCTransport(sid, s.config)
 
 	offer, err := t.CreateOffer()
 	if err != nil {
@@ -261,7 +262,7 @@ func (s *SFU) stats() string {
 	}
 
 	for _, transport := range s.transports {
-		info += transport.stats()
+		info += transport.Stats()
 	}
 	s.mu.RUnlock()
 	return info

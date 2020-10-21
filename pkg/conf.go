@@ -7,14 +7,6 @@ type samplebuilderconf struct {
 	VideoMaxLate uint16 `mapstructure:"videomaxlate"`
 }
 
-type pipelineconf struct {
-	WebmSaver webmsaver `mapstructure:"webmsaver"`
-}
-
-type webmsaver struct {
-	Path string `mapstructure:"path"`
-}
-
 type iceconf struct {
 	URLs       []string `mapstructure:"urls"`
 	Username   string   `mapstructure:"username"`
@@ -30,7 +22,6 @@ type webrtcconf struct {
 // Config for base AVP
 type Config struct {
 	Log           log.Config        `mapstructure:"log"`
-	Pipeline      pipelineconf      `mapstructure:"pipeline"`
 	SampleBuilder samplebuilderconf `mapstructure:"samplebuilder"`
 	WebRTC        webrtcconf        `mapstructure:"webrtc"`
 }
