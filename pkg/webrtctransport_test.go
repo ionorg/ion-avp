@@ -91,13 +91,6 @@ func TestNewWebRTCTransport(t *testing.T) {
 
 	signal(t, transport, remote)
 
-	expectedString := []string{"track", "pending"}
-
-	stats := transport.Stats()
-	for _, expected := range expectedString {
-		assert.Contains(t, stats, expected)
-	}
-
 	assert.NoError(t, transport.Close())
 	assert.NotNil(t, transport)
 
@@ -224,11 +217,6 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	sendRTPUntilDone(done, t, []*webrtc.Track{track})
 
 	transport.Process("123", tid, "test-eid", []byte{})
-	expectedStrings := []string{"track", "element"}
-	stats := transport.Stats()
-	for _, expected := range expectedStrings {
-		assert.Contains(t, stats, expected)
-	}
 
 	assert.NoError(t, remote.RemoveTrack(sender))
 	assert.NoError(t, signalPair(remote, transport.pc))

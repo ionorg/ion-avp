@@ -102,13 +102,6 @@ func TestNewBuilder_WithOpusName(t *testing.T) {
 		builder.AttachElement(&elementMock{})
 		assert.Equal(t, track, builder.Track())
 
-		assert.NotEmpty(t, builder.stats())
-		expectedString := []string{"track", "element"}
-		stats := builder.stats()
-		for _, entry := range expectedString {
-			assert.Contains(t, stats, entry)
-		}
-
 		onBuilderFiredFunc()
 	})
 
@@ -148,13 +141,6 @@ func TestNewBuilder_WithVP8Packet(t *testing.T) {
 
 		builder.AttachElement(&elementMock{})
 		assert.Equal(t, track, builder.Track())
-
-		assert.NotEmpty(t, builder.stats())
-		expectedString := []string{"track", "element"}
-		stats := builder.stats()
-		for _, entry := range expectedString {
-			assert.Contains(t, stats, entry)
-		}
 
 		onBuilderFiredFunc()
 	})
@@ -201,7 +187,6 @@ func TestNewBuilder_WithVP9Packet(t *testing.T) {
 
 		// To cause the building to stop while trying to read tracks
 		builder.stop()
-		assert.NotEmpty(t, builder.stats())
 
 		time.Sleep(time.Second * 10)
 
@@ -248,13 +233,6 @@ func TestNewBuilder_WithH264Packet(t *testing.T) {
 
 		builder.AttachElement(&elementMock{})
 		assert.Equal(t, track, builder.Track())
-
-		assert.NotEmpty(t, builder.stats())
-		expectedString := []string{"track", "element"}
-		stats := builder.stats()
-		for _, entry := range expectedString {
-			assert.Contains(t, stats, entry)
-		}
 
 		// Add sleep to ensure tracks are being processed by go forward
 		time.Sleep(time.Second * 10)

@@ -2,7 +2,6 @@ package avp
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -277,24 +276,4 @@ func (t *WebRTCTransport) AddICECandidate(candidate webrtc.ICECandidateInit) err
 // Take note that the handler is gonna be called with a nil pointer when gathering is finished.
 func (t *WebRTCTransport) OnICECandidate(f func(c *webrtc.ICECandidate)) {
 	t.pc.OnICECandidate(f)
-}
-
-// Stats transport statistics
-func (t *WebRTCTransport) Stats() string {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
-	info := fmt.Sprintf("    session: %s\n", t.id)
-	for _, builder := range t.builders {
-		info += builder.stats()
-	}
-
-	if len(t.pending) > 0 {
-		info += "    pending tracks:\n"
-		for tid := range t.pending {
-			info += fmt.Sprintf("      track id: %s\n", tid)
-		}
-	}
-
-	return info
 }

@@ -250,20 +250,3 @@ func (s *SFU) join(sid string) *avp.WebRTCTransport {
 
 	return t
 }
-
-// show all sfu client stats
-func (s *SFU) stats() string {
-	info := "\n  sfu\n"
-
-	s.mu.RLock()
-	if len(s.transports) == 0 {
-		s.mu.RUnlock()
-		return info
-	}
-
-	for _, transport := range s.transports {
-		info += transport.Stats()
-	}
-	s.mu.RUnlock()
-	return info
-}

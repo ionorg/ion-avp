@@ -2,7 +2,6 @@ package avp
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"sync"
 
@@ -25,7 +24,7 @@ var (
 // Builder Module for building video/audio samples from rtp streams
 type Builder struct {
 	mu            sync.RWMutex
-	stopped       bool
+	stopped       atomicBool
 	onStopHandler func()
 	builder       *samplebuilder.SampleBuilder
 	elements      []Element
@@ -90,10 +89,7 @@ func (b *Builder) OnStop(f func()) {
 func (b *Builder) build() {
 	log.Debugf("Reading rtp for track: %s", b.Track().ID())
 	for {
-		b.mu.RLock()
-		stop := b.stopped
-		b.mu.RUnlock()
-		if stop {
+		if b.stopped.get() {
 			return
 		}
 
@@ -114,10 +110,7 @@ func (b *Builder) build() {
 			sample, timestamp := b.builder.PopWithTimestamp()
 			log.Tracef("Got sample from builder: %s sample: %v", b.Track().ID(), sample)
 
-			b.mu.RLock()
-			stop = b.stopped
-			b.mu.RUnlock()
-			if stop {
+			if b.stopped.get() {
 				return
 			}
 
@@ -142,12 +135,12 @@ func (b *Builder) forward() {
 	for {
 		sample := <-b.out
 
-		b.mu.RLock()
-		elements := b.elements
-		if b.stopped {
-			b.mu.RUnlock()
+		if b.stopped.get() {
 			return
 		}
+
+		b.mu.RLock()
+		elements := b.elements
 		for _, e := range elements {
 			err := e.Write(sample)
 			if err != nil {
@@ -162,10 +155,10 @@ func (b *Builder) forward() {
 func (b *Builder) stop() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.stopped {
+	if b.stopped.get() {
 		return
 	}
-	b.stopped = true
+	b.stopped.set(true)
 	for _, e := range b.elements {
 		e.Close()
 	}
@@ -173,14 +166,4 @@ func (b *Builder) stop() {
 		b.onStopHandler()
 	}
 	close(b.out)
-}
-
-func (b *Builder) stats() string {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	info := fmt.Sprintf("      track: %s\n", b.track.ID())
-	for _, e := range b.elements {
-		info += fmt.Sprintf("        element: %T\n", e)
-	}
-	return info
 }
