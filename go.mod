@@ -11,7 +11,7 @@ require (
 	github.com/pion/rtp v1.6.1
 	github.com/pion/sdp/v2 v2.4.0
 	github.com/pion/transport v0.10.1
-	github.com/pion/webrtc/v3 v3.0.0-beta.9
+	github.com/pion/webrtc/v3 v3.0.0-beta.10
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
