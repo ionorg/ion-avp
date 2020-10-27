@@ -20,7 +20,7 @@ COPY cmd/ $GOPATH/src/github.com/pion/ion-avp/cmd
 WORKDIR $GOPATH/src/github.com/pion/ion-avp/cmd/signal/grpc
 RUN GOOS=linux go build -tags libvpx -a -installsuffix cgo -o /avp .
 
-FROM alpine:3.12.0
+FROM alpine:3.12.1
 
 RUN apk --no-cache add ca-certificates libvpx-dev
 COPY --from=0 /avp /usr/local/bin/avp
