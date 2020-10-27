@@ -27,14 +27,17 @@ func NewAVP(c avp.Config, elems map[string]avp.ElementFun) *AVP {
 }
 
 // Process starts a process for a track.
-func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string, config []byte) {
+func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string, config []byte) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	c := a.clients[addr]
 	// no client yet, create one
 	if c == nil {
-		c = NewSFU(addr, a.config)
+		var err error
+		if c, err = NewSFU(addr, a.config); err != nil {
+			return err
+		}
 		c.OnClose(func() {
 			a.mu.Lock()
 			defer a.mu.Unlock()
@@ -43,6 +46,10 @@ func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string, conf
 		a.clients[addr] = c
 	}
 
-	t := c.GetTransport(sid)
-	t.Process(pid, tid, eid, config)
+	t, err := c.GetTransport(sid)
+	if err != nil {
+		return err
+	}
+
+	return t.Process(pid, tid, eid, config)
 }

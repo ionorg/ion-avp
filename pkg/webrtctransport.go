@@ -2,6 +2,7 @@ package avp
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -192,7 +193,7 @@ func (t *WebRTCTransport) Close() error {
 }
 
 // Process creates a pipeline
-func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) {
+func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) error {
 	log.Infof("WebRTCTransport.Process id=%s", pid)
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -200,7 +201,7 @@ func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) {
 	e := registry.GetElement(eid)
 	if e == nil {
 		log.Errorf("element not found: %s", eid)
-		return
+		return errors.New("element not found")
 	}
 
 	b := t.builders[tid]
@@ -210,7 +211,7 @@ func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) {
 			pid: pid,
 			fn:  func() Element { return e(t.id, pid, tid, config) },
 		})
-		return
+		return nil
 	}
 
 	process := t.processes[pid]
@@ -220,6 +221,8 @@ func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) {
 	}
 
 	b.AttachElement(process)
+
+	return nil
 }
 
 // CreateOffer starts the PeerConnection and generates the localDescription

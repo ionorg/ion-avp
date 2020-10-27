@@ -22,7 +22,8 @@ func main() {
 	// Set up a connection to the avp server.
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		log.Printf("did not connect: %v", err)
+		return
 	}
 	defer conn.Close()
 	c := pb.NewAVPClient(conn)
@@ -32,14 +33,16 @@ func main() {
 	client, err := c.Signal(ctx)
 
 	if err != nil {
-		log.Fatalf("Error intializing avp signal stream: %s", err)
+		log.Printf("Error intializing avp signal stream: %s", err)
+		return
 	}
 
 	buf := bufio.NewReader(os.Stdin)
 	log.Print("track id: ")
 	id, err := buf.ReadString('\n')
 	if err != nil {
-		log.Fatalf("error reading ssrc: %s", err)
+		log.Printf("error reading ssrc: %s", err)
+		return
 	}
 	id = strings.TrimSpace(id)
 
@@ -56,7 +59,8 @@ func main() {
 	})
 
 	if err != nil {
-		log.Fatalf("error sending signal request: %s", err)
+		log.Printf("error sending signal request: %s", err)
+		return
 	}
 
 	select {}

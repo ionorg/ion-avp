@@ -27,13 +27,13 @@ type SFU struct {
 }
 
 // NewSFU intializes a new SFU client
-func NewSFU(addr string, config avp.Config) *SFU {
+func NewSFU(addr string, config avp.Config) (*SFU, error) {
 	log.Infof("Connecting to sfu: %s", addr)
 	// Set up a connection to the sfu server.
 	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Errorf("did not connect: %v", err)
-		return nil
+		return nil, err
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -43,11 +43,11 @@ func NewSFU(addr string, config avp.Config) *SFU {
 		client:     sfu.NewSFUClient(conn),
 		config:     config,
 		transports: make(map[string]*avp.WebRTCTransport),
-	}
+	}, nil
 }
 
 // GetTransport returns a webrtc transport for a session
-func (s *SFU) GetTransport(sid string) *avp.WebRTCTransport {
+func (s *SFU) GetTransport(sid string) (*avp.WebRTCTransport, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -55,7 +55,10 @@ func (s *SFU) GetTransport(sid string) *avp.WebRTCTransport {
 
 	// no transport yet, create one
 	if t == nil {
-		t = s.join(sid)
+		var err error
+		if t, err = s.join(sid); err != nil {
+			return nil, err
+		}
 		t.OnClose(func() {
 			s.mu.Lock()
 			defer s.mu.Unlock()
@@ -68,7 +71,7 @@ func (s *SFU) GetTransport(sid string) *avp.WebRTCTransport {
 		s.transports[sid] = t
 	}
 
-	return t
+	return t, nil
 }
 
 // OnClose handler called when sfu client is closed
@@ -78,14 +81,14 @@ func (s *SFU) OnClose(f func()) {
 
 // Join creates an sfu client and join the session.
 // All tracks will be relayed to the avp.
-func (s *SFU) join(sid string) *avp.WebRTCTransport {
+func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 	log.Infof("Joining sfu session: %s", sid)
 
 	sfustream, err := s.client.Signal(s.ctx)
 
 	if err != nil {
 		log.Errorf("error creating sfu stream: %s", err)
-		return nil
+		return nil, err
 	}
 
 	t := avp.NewWebRTCTransport(sid, s.config)
@@ -93,12 +96,12 @@ func (s *SFU) join(sid string) *avp.WebRTCTransport {
 	offer, err := t.CreateOffer()
 	if err != nil {
 		log.Errorf("Error creating offer: %v", err)
-		return nil
+		return nil, err
 	}
 
 	if err = t.SetLocalDescription(offer); err != nil {
 		log.Errorf("Error setting local description: %v", err)
-		return nil
+		return nil, err
 	}
 
 	log.Debugf("Send offer:\n %s", offer.SDP)
@@ -118,7 +121,7 @@ func (s *SFU) join(sid string) *avp.WebRTCTransport {
 
 	if err != nil {
 		log.Errorf("Error sending publish request: %v", err)
-		return nil
+		return nil, err
 	}
 
 	t.OnICECandidate(func(c *webrtc.ICECandidate) {
@@ -248,5 +251,5 @@ func (s *SFU) join(sid string) *avp.WebRTCTransport {
 		}
 	}()
 
-	return t
+	return t, nil
 }
