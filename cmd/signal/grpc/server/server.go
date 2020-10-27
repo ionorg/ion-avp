@@ -69,7 +69,6 @@ func (s *server) Signal(stream pb.AVP_SignalServer) error {
 				payload.Process.Config,
 			); err != nil {
 				log.Errorf("process error: %v", err)
-				return err
 			}
 		}
 	}
