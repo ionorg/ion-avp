@@ -204,7 +204,7 @@ func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) error {
 			pid: pid,
 			fn:  func() Element { return e(t.id, pid, tid, config) },
 		})
-		return errors.New("builder not found for track")
+		return nil
 	}
 
 	process := t.processes[pid]

@@ -87,7 +87,8 @@ func TestNewWebRTCTransport(t *testing.T) {
 		close(closed)
 	})
 
-	transport.Process("123", "tid", "test-eid", []byte{})
+	err = transport.Process("123", "tid", "test-eid", []byte{})
+	assert.NoError(t, err)
 
 	signal(t, transport, remote)
 
@@ -124,8 +125,11 @@ func TestNewWebRTCTransportWithBuilder(t *testing.T) {
 		onTransportCloseFunc()
 	})
 
-	transport.Process("123", "tid", "test-eid", []byte{})
-	transport.Process("123", "tid", "test-eid", []byte{})
+	err = transport.Process("123", "tid", "test-eid", []byte{})
+	assert.NoError(t, err)
+
+	err = transport.Process("123", "tid", "test-eid", []byte{})
+	assert.NoError(t, err)
 
 	signal(t, transport, remote)
 
@@ -198,7 +202,8 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	transport := NewWebRTCTransport("id", Config{})
 	assert.NotNil(t, transport)
 
-	transport.Process("123", tid, "test-eid", []byte{})
+	err = transport.Process("123", tid, "test-eid", []byte{})
+	assert.NoError(t, err)
 
 	offer, err := remote.CreateOffer(nil)
 	assert.NoError(t, remote.SetLocalDescription(offer))
@@ -216,7 +221,8 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	done := waitForBuilder(transport, tid)
 	sendRTPUntilDone(done, t, []*webrtc.Track{track})
 
-	transport.Process("123", tid, "test-eid", []byte{})
+	err = transport.Process("123", tid, "test-eid", []byte{})
+	assert.NoError(t, err)
 
 	assert.NoError(t, remote.RemoveTrack(sender))
 	assert.NoError(t, signalPair(remote, transport.pc))
