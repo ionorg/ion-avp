@@ -114,6 +114,13 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 			delete(t.pending, id)
 		}
 
+		if track.Kind() == webrtc.RTPCodecTypeVideo {
+			err := pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{SenderSSRC: track.SSRC(), MediaSSRC: track.SSRC()}})
+			if err != nil {
+				log.Errorf("error writing pli %s", err)
+			}
+		}
+
 		builder.OnStop(func() {
 			t.mu.Lock()
 			b := t.builders[id]

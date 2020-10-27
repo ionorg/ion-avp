@@ -140,8 +140,7 @@ func (b *Builder) forward() {
 		}
 
 		b.mu.RLock()
-		elements := b.elements
-		for _, e := range elements {
+		for _, e := range b.elements {
 			err := e.Write(sample)
 			if err != nil {
 				log.Errorf("error writing sample: %s", err)
@@ -153,11 +152,13 @@ func (b *Builder) forward() {
 
 // Stop stop all buffer
 func (b *Builder) stop() {
-	b.mu.Lock()
-	defer b.mu.Unlock()
 	if b.stopped.get() {
 		return
 	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	b.stopped.set(true)
 	for _, e := range b.elements {
 		e.Close()
