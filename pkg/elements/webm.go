@@ -8,7 +8,7 @@ import (
 	"github.com/at-wat/ebml-go/webm"
 
 	avp "github.com/pion/ion-avp/pkg"
-	"github.com/pion/ion-avp/pkg/log"
+	log "github.com/pion/ion-log"
 )
 
 // WebmSaver Module for saving rtp streams to webm

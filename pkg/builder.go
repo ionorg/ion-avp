@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/pion/ion-avp/pkg/log"
+	log "github.com/pion/ion-log"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v3"

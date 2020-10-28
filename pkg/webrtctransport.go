@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pion/ion-avp/pkg/log"
+	log "github.com/pion/ion-log"
 	"github.com/pion/rtcp"
 	"github.com/pion/sdp/v2"
 
