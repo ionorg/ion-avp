@@ -227,6 +227,7 @@ github.com/pion/dtls/v2 v2.0.3 h1:3qQ0s4+TXD00rsllL8g8KQcxAs+Y/Z6oz618RXX6p14=
 github.com/pion/dtls/v2 v2.0.3/go.mod h1:TUjyL8bf8LH95h81Xj7kATmzMRt29F/4lxpIPj2Xe4Y=
 github.com/pion/ice/v2 v2.0.9 h1:oHbiN6Q9tgb8Gfu3I4cbr5mHRE1uqiuFABQ8CbWjIyk=
 github.com/pion/ice/v2 v2.0.9/go.mod h1:NK+o39ynb+N1YSj9fPgWs3vjVcrsWw0KCr/311MqVq8=
+github.com/pion/ion-log v0.0.0-20201024224650-e6b94dfeaf1d h1:lG2DmuOV2bSoncAABwIvFOi4/yptRsk/n9PkXbMAxT0=
 github.com/pion/ion-log v0.0.0-20201024224650-e6b94dfeaf1d/go.mod h1:jwcla9KoB9bB/4FxYDSRJPcPYSLp5XiUUMnOLaqwl4E=
 github.com/pion/ion-sfu v1.0.37 h1:ojvuWPvVt416iedAwfQZeh+WhYMxh+8D4MUV+bF8oFc=
 github.com/pion/ion-sfu v1.0.37/go.mod h1:l4is/Cy+TFHokXxjDy9l+tO2x0f667ViLk7GYJ2Wa+4=

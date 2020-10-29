@@ -7,6 +7,7 @@ import (
 
 	grpc "github.com/pion/ion-avp/cmd/signal/grpc/server"
 	avp "github.com/pion/ion-avp/pkg"
+	log "github.com/pion/ion-log"
 	"github.com/spf13/viper"
 )
 
@@ -68,6 +69,10 @@ func main() {
 		showHelp()
 		os.Exit(-1)
 	}
+
+	fixByFile := []string{"asm_amd64.s", "proc.go", "icegatherer.go"}
+	fixByFunc := []string{}
+	log.Init(conf.Log.Level, fixByFile, fixByFunc)
 
 	grpc.NewServer(addr, conf, map[string]avp.ElementFun{
 		// fill in elements

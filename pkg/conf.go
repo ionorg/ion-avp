@@ -1,6 +1,6 @@
 package avp
 
-import "github.com/pion/ion-avp/pkg/log"
+import log "github.com/pion/ion-log"
 
 type samplebuilderconf struct {
 	AudioMaxLate uint16 `mapstructure:"audiomaxlate"`

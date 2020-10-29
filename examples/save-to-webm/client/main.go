@@ -5,11 +5,11 @@ package main
 import (
 	"bufio"
 	"context"
-	"log"
 	"os"
 	"strings"
 
 	pb "github.com/pion/ion-avp/cmd/signal/grpc/proto"
+	log "github.com/pion/ion-log"
 	"google.golang.org/grpc"
 )
 
@@ -19,10 +19,14 @@ const (
 )
 
 func main() {
+	fixByFile := []string{"asm_amd64.s", "proc.go"}
+	fixByFunc := []string{}
+	log.Init("info", fixByFile, fixByFunc)
+
 	// Set up a connection to the avp server.
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		log.Printf("did not connect: %v", err)
+		log.Errorf("did not connect: %v", err)
 		return
 	}
 	defer conn.Close()
@@ -33,15 +37,15 @@ func main() {
 	client, err := c.Signal(ctx)
 
 	if err != nil {
-		log.Printf("Error intializing avp signal stream: %s", err)
+		log.Errorf("Error intializing avp signal stream: %s", err)
 		return
 	}
 
 	buf := bufio.NewReader(os.Stdin)
-	log.Print("track id: ")
+	log.Infof("track id: ")
 	id, err := buf.ReadString('\n')
 	if err != nil {
-		log.Printf("error reading ssrc: %s", err)
+		log.Errorf("error reading ssrc: %s", err)
 		return
 	}
 	id = strings.TrimSpace(id)
@@ -59,7 +63,7 @@ func main() {
 	})
 
 	if err != nil {
-		log.Printf("error sending signal request: %s", err)
+		log.Errorf("error sending signal request: %s", err)
 		return
 	}
 

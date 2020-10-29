@@ -6,7 +6,7 @@ import (
 	"time"
 
 	avp "github.com/pion/ion-avp/pkg"
-	"github.com/pion/ion-avp/pkg/log"
+	log "github.com/pion/ion-log"
 	"github.com/xlab/libvpx-go/vpx"
 )
 

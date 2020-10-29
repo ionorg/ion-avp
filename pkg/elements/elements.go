@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	avp "github.com/pion/ion-avp/pkg"
-	"github.com/pion/ion-avp/pkg/log"
+	log "github.com/pion/ion-log"
 )
 
 // Types for samples
