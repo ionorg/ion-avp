@@ -16,7 +16,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/xlab/libvpx-go v0.0.0-20200321114045-4c41f8a7acef
-	golang.org/x/exp v0.0.0-20200924195034-c827fd4f18b9
+	golang.org/x/exp v0.0.0-20201008143054-e3b2a7f2fdc7
 	google.golang.org/grpc v1.33.1
 	google.golang.org/protobuf v1.25.0
 )
