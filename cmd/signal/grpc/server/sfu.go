@@ -202,7 +202,7 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 				}
 
 				if sdp.Type == webrtc.SDPTypeOffer {
-					log.Debugf("got offer: %s", sdp)
+					log.Debugf("got offer: %v", sdp)
 
 					// Peer exists, renegotiating existing peer
 					err = t.SetRemoteDescription(sdp)
@@ -224,7 +224,7 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 						continue
 					}
 
-					marshalled, err := json.Marshal(answer)
+					marshalled, err = json.Marshal(answer)
 					if err != nil {
 						log.Errorf("sdp marshall error %s", err)
 						continue
@@ -241,7 +241,7 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 						continue
 					}
 				} else if sdp.Type == webrtc.SDPTypeAnswer {
-					log.Debugf("got answer: %s", sdp)
+					log.Debugf("got answer: %v", sdp)
 					err = t.SetRemoteDescription(sdp)
 
 					if err != nil {
