@@ -104,16 +104,18 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 		return nil, err
 	}
 
+	marshalled, err := json.Marshal(offer)
+	if err != nil {
+		return nil, err
+	}
+
 	log.Debugf("Send offer:\n %s", offer.SDP)
 	err = sfustream.Send(
 		&sfu.SignalRequest{
 			Payload: &sfu.SignalRequest_Join{
 				Join: &sfu.JoinRequest{
-					Sid: sid,
-					Offer: &sfu.SessionDescription{
-						Type: offer.Type.String(),
-						Sdp:  []byte(offer.SDP),
-					},
+					Sid:         sid,
+					Description: marshalled,
 				},
 			},
 		},
@@ -177,26 +179,33 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 			switch payload := res.Payload.(type) {
 			case *sfu.SignalReply_Join:
 				// Set the remote SessionDescription
-				log.Debugf("got answer: %s", string(payload.Join.Answer.Sdp))
-				if err = t.SetRemoteDescription(webrtc.SessionDescription{
-					Type: webrtc.SDPTypeAnswer,
-					SDP:  string(payload.Join.Answer.Sdp),
-				}); err != nil {
+				log.Debugf("got answer: %s", payload.Join.Description)
+
+				var sdp webrtc.SessionDescription
+				err := json.Unmarshal(payload.Join.Description, &sdp)
+				if err != nil {
+					log.Errorf("sdp unmarshal error: %v", err)
+					return
+				}
+
+				if err = t.SetRemoteDescription(sdp); err != nil {
 					log.Errorf("join error %s", err)
 					return
 				}
 
-			case *sfu.SignalReply_Negotiate:
-				log.Debugf("got negotiate %s", payload.Negotiate.Type)
-				if payload.Negotiate.Type == webrtc.SDPTypeOffer.String() {
-					log.Debugf("got offer: %s", string(payload.Negotiate.Sdp))
-					offer := webrtc.SessionDescription{
-						Type: webrtc.SDPTypeOffer,
-						SDP:  string(payload.Negotiate.Sdp),
-					}
+			case *sfu.SignalReply_Description:
+				var sdp webrtc.SessionDescription
+				err := json.Unmarshal(payload.Description, &sdp)
+				if err != nil {
+					log.Errorf("sdp unmarshal error: %v", err)
+					return
+				}
+
+				if sdp.Type == webrtc.SDPTypeOffer {
+					log.Debugf("got offer: %v", sdp)
 
 					// Peer exists, renegotiating existing peer
-					err = t.SetRemoteDescription(offer)
+					err = t.SetRemoteDescription(sdp)
 					if err != nil {
 						log.Errorf("negotiate error %s", err)
 						continue
@@ -215,12 +224,15 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 						continue
 					}
 
+					marshalled, err = json.Marshal(answer)
+					if err != nil {
+						log.Errorf("sdp marshall error %s", err)
+						continue
+					}
+
 					err = sfustream.Send(&sfu.SignalRequest{
-						Payload: &sfu.SignalRequest_Negotiate{
-							Negotiate: &sfu.SessionDescription{
-								Type: answer.Type.String(),
-								Sdp:  []byte(answer.SDP),
-							},
+						Payload: &sfu.SignalRequest_Description{
+							Description: marshalled,
 						},
 					})
 
@@ -228,12 +240,9 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 						log.Errorf("negotiate error %s", err)
 						continue
 					}
-				} else if payload.Negotiate.Type == webrtc.SDPTypeAnswer.String() {
-					log.Debugf("got answer: %s", string(payload.Negotiate.Sdp))
-					err = t.SetRemoteDescription(webrtc.SessionDescription{
-						Type: webrtc.SDPTypeAnswer,
-						SDP:  string(payload.Negotiate.Sdp),
-					})
+				} else if sdp.Type == webrtc.SDPTypeAnswer {
+					log.Debugf("got answer: %v", sdp)
+					err = t.SetRemoteDescription(sdp)
 
 					if err != nil {
 						log.Errorf("negotiate error %s", err)
