@@ -1,4 +1,4 @@
-FROM golang:1.15.3-buster
+FROM golang:1.15.4-buster
 
 ENV GO111MODULE=on
 
