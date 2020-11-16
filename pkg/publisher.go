@@ -16,9 +16,6 @@ type Publisher struct {
 
 	candidates []webrtc.ICECandidateInit
 
-	onTrackHandler func(*webrtc.Track, *webrtc.RTPReceiver)
-	onCloseFn      func()
-
 	closeOnce sync.Once
 }
 

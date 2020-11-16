@@ -36,11 +36,11 @@ type PendingProcess struct {
 
 // WebRTCTransport represents a webrtc transport
 type WebRTCTransport struct {
-	id        string
-	pub       *Publisher
-	sub       *Subscriber
-	mu        sync.RWMutex
-	feedback  *webrtc.DataChannel
+	id  string
+	pub *Publisher
+	sub *Subscriber
+	mu  sync.RWMutex
+
 	builders  map[string]*Builder         // one builder per track
 	pending   map[string][]PendingProcess // maps track id to pending element constructors
 	processes map[string]Element          // existing processes
@@ -83,8 +83,12 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 	}
 
 	pub, err := NewPublisher(id, config)
-	sub, err := NewSubscriber(id, config)
+	if err != nil {
+		log.Errorf("Error creating peer connection: %s", err)
+		return nil
+	}
 
+	sub, err := NewSubscriber(id, config)
 	if err != nil {
 		log.Errorf("Error creating peer connection: %s", err)
 		return nil
