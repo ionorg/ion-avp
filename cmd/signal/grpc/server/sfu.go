@@ -99,11 +99,6 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 		return nil, err
 	}
 
-	if err = t.SetLocalDescription(offer); err != nil {
-		log.Errorf("Error setting local description: %v", err)
-		return nil, err
-	}
-
 	marshalled, err := json.Marshal(offer)
 	if err != nil {
 		return nil, err
@@ -126,7 +121,7 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 		return nil, err
 	}
 
-	t.OnICECandidate(func(c *webrtc.ICECandidate) {
+	t.OnICECandidate(func(c *webrtc.ICECandidate, target int) {
 		if c == nil {
 			// Gathering done
 			return
@@ -138,7 +133,8 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 		err = sfustream.Send(&sfu.SignalRequest{
 			Payload: &sfu.SignalRequest_Trickle{
 				Trickle: &sfu.Trickle{
-					Init: string(bytes),
+					Init:   string(bytes),
+					Target: sfu.Trickle_Target(target),
 				},
 			},
 		})
@@ -204,21 +200,8 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 				if sdp.Type == webrtc.SDPTypeOffer {
 					log.Debugf("got offer: %v", sdp)
 
-					// Peer exists, renegotiating existing peer
-					err = t.SetRemoteDescription(sdp)
-					if err != nil {
-						log.Errorf("negotiate error %s", err)
-						continue
-					}
-
 					var answer webrtc.SessionDescription
-					answer, err = t.CreateAnswer()
-					if err != nil {
-						log.Errorf("negotiate error %s", err)
-						continue
-					}
-
-					err = t.SetLocalDescription(answer)
+					answer, err = t.Answer(sdp)
 					if err != nil {
 						log.Errorf("negotiate error %s", err)
 						continue
@@ -252,7 +235,7 @@ func (s *SFU) join(sid string) (*avp.WebRTCTransport, error) {
 			case *sfu.SignalReply_Trickle:
 				var candidate webrtc.ICECandidateInit
 				_ = json.Unmarshal([]byte(payload.Trickle.Init), &candidate)
-				err := t.AddICECandidate(candidate)
+				err := t.AddICECandidate(candidate, int(payload.Trickle.Target))
 				if err != nil {
 					log.Errorf("error adding ice candidate: %e", err)
 				}
