@@ -29,6 +29,13 @@ func NewPublisher(id string, cfg WebRTCTransportConfig) (*Publisher, error) {
 		return nil, errPeerConnectionInitFailed
 	}
 
+	_, err = pc.CreateDataChannel("ion-sfu", &webrtc.DataChannelInit{})
+
+	if err != nil {
+		log.Errorf("error creating data channel: %v", err)
+		return nil, errPeerConnectionInitFailed
+	}
+
 	s := &Publisher{
 		id: id,
 		pc: pc,
