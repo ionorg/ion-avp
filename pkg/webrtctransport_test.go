@@ -52,12 +52,8 @@ func signal(t *testing.T, transport *WebRTCTransport, remote *webrtc.PeerConnect
 	assert.NoError(t, err)
 	assert.NoError(t, remote.SetLocalDescription(offer))
 	<-gatherComplete
-
-	assert.NoError(t, transport.SetRemoteDescription(offer))
-
-	answer, err := transport.CreateAnswer()
+	answer, err := transport.Answer(offer)
 	assert.NoError(t, err)
-	assert.NoError(t, transport.SetLocalDescription(answer))
 	assert.NoError(t, remote.SetRemoteDescription(answer))
 }
 
@@ -133,13 +129,11 @@ func TestNewWebRTCTransportWithBuilder(t *testing.T) {
 
 	signal(t, transport, remote)
 
-	transport.OnICECandidate(func(c *webrtc.ICECandidate) {})
-
-	assert.NoError(t, transport.AddICECandidate(webrtc.ICECandidateInit{Candidate: "1986380506 99 udp 2 10.0.75.1 53634 typ host generation 0 network-id 2"}))
+	// assert.NoError(t, transport.AddICECandidate(webrtc.ICECandidateInit{Candidate: "1986380506 99 udp 2 10.0.75.1 53634 typ host generation 0 network-id 2"}))
 	assert.NoError(t, transport.Close())
 	<-onTransportCloseFired.Done()
 
-	assert.NoError(t, transport.pc.Close())
+	assert.NoError(t, transport.Close())
 	assert.NoError(t, remote.Close())
 }
 
@@ -211,12 +205,9 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, offer)
 	<-gatherComplete
-	assert.NoError(t, transport.SetRemoteDescription(*remote.LocalDescription()))
-	answer, err := transport.CreateAnswer()
+	answer, err := transport.Answer(*remote.LocalDescription())
 	assert.NoError(t, err)
-	err = transport.SetLocalDescription(answer)
-	assert.NoError(t, err)
-	assert.NoError(t, remote.SetRemoteDescription(*transport.pc.LocalDescription()))
+	assert.NoError(t, remote.SetRemoteDescription(answer))
 
 	done := waitForBuilder(transport, tid)
 	sendRTPUntilDone(done, t, []*webrtc.Track{track})
@@ -225,7 +216,7 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, remote.RemoveTrack(sender))
-	assert.NoError(t, signalPair(remote, transport.pc))
+	assert.NoError(t, signalPair(remote, transport.sub.pc))
 
 	done = waitForRemoveTrack(transport, tid)
 

@@ -1,18 +1,27 @@
 package avp
 
 import (
-	"encoding/json"
 	"errors"
-	"strings"
+	"fmt"
 	"sync"
 	"time"
 
 	log "github.com/pion/ion-log"
 	"github.com/pion/rtcp"
-	"github.com/pion/sdp/v2"
 
 	"github.com/pion/webrtc/v3"
 )
+
+const (
+	publisher  = 0
+	subscriber = 1
+)
+
+// WebRTCTransportConfig represents configuration options
+type WebRTCTransportConfig struct {
+	configuration webrtc.Configuration
+	setting       webrtc.SettingEngine
+}
 
 type SFUFeedback struct {
 	StreamID string `json:"streamId"`
@@ -27,10 +36,11 @@ type PendingProcess struct {
 
 // WebRTCTransport represents a webrtc transport
 type WebRTCTransport struct {
-	id        string
-	pc        *webrtc.PeerConnection
-	mu        sync.RWMutex
-	feedback  *webrtc.DataChannel
+	id  string
+	pub *Publisher
+	sub *Subscriber
+	mu  sync.RWMutex
+
 	builders  map[string]*Builder         // one builder per track
 	pending   map[string][]PendingProcess // maps track id to pending element constructors
 	processes map[string]Element          // existing processes
@@ -67,33 +77,33 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 
 	conf.ICEServers = iceServers
 
-	// Create peer connection
-	me := webrtc.MediaEngine{}
-	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me), webrtc.WithSettingEngine(se))
-	pc, err := api.NewPeerConnection(conf)
+	config := WebRTCTransportConfig{
+		setting:       se,
+		configuration: conf,
+	}
 
+	pub, err := NewPublisher(config)
 	if err != nil {
 		log.Errorf("Error creating peer connection: %s", err)
 		return nil
 	}
 
-	feedback, err := pc.CreateDataChannel("ion-sfu", nil)
+	sub, err := NewSubscriber(config)
 	if err != nil {
-		log.Errorf("Error creating peer data channel: %s", err)
+		log.Errorf("Error creating peer connection: %s", err)
 		return nil
 	}
 
 	t := &WebRTCTransport{
 		id:        id,
-		feedback:  feedback,
-		pc:        pc,
+		pub:       pub,
+		sub:       sub,
 		builders:  make(map[string]*Builder),
 		pending:   make(map[string][]PendingProcess),
 		processes: make(map[string]Element),
 	}
 
-	pc.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver) {
+	sub.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver) {
 		id := track.ID()
 		log.Infof("Got track: %s", id)
 		builder := NewBuilder(track, 200)
@@ -116,7 +126,7 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 		}
 
 		if track.Kind() == webrtc.RTPCodecTypeVideo {
-			err := pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{SenderSSRC: track.SSRC(), MediaSSRC: track.SSRC()}})
+			err := sub.pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{SenderSSRC: track.SSRC(), MediaSSRC: track.SSRC()}})
 			if err != nil {
 				log.Errorf("error writing pli %s", err)
 			}
@@ -163,7 +173,7 @@ func (t *WebRTCTransport) pliLoop(cycle uint) {
 			pkts = append(pkts, &rtcp.PictureLossIndication{SenderSSRC: b.Track().SSRC(), MediaSSRC: b.Track().SSRC()})
 		}
 
-		err := t.pc.WriteRTCP(pkts)
+		err := t.sub.pc.WriteRTCP(pkts)
 		if err != nil {
 			log.Errorf("error writing pli %s", err)
 		}
@@ -189,7 +199,12 @@ func (t *WebRTCTransport) Close() error {
 	if t.onCloseFn != nil {
 		t.onCloseFn()
 	}
-	return t.pc.Close()
+
+	err := t.sub.Close()
+	if err != nil {
+		return err
+	}
+	return t.pub.Close()
 }
 
 // Process creates a pipeline
@@ -227,63 +242,41 @@ func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) error {
 
 // CreateOffer starts the PeerConnection and generates the localDescription
 func (t *WebRTCTransport) CreateOffer() (webrtc.SessionDescription, error) {
-	return t.pc.CreateOffer(nil)
-}
-
-// CreateAnswer starts the PeerConnection and generates the localDescription
-func (t *WebRTCTransport) CreateAnswer() (webrtc.SessionDescription, error) {
-	return t.pc.CreateAnswer(nil)
-}
-
-// SetLocalDescription sets the SessionDescription of the local peer
-func (t *WebRTCTransport) SetLocalDescription(desc webrtc.SessionDescription) error {
-	return t.pc.SetLocalDescription(desc)
+	return t.pub.CreateOffer()
 }
 
 // SetRemoteDescription sets the SessionDescription of the remote peer
 func (t *WebRTCTransport) SetRemoteDescription(desc webrtc.SessionDescription) error {
-	parsed := sdp.SessionDescription{}
-	if err := parsed.Unmarshal([]byte(desc.SDP)); err == nil {
-		for _, m := range parsed.MediaDescriptions {
-			if msid, ok := m.Attribute(sdp.AttrKeyMsid); ok {
-				split := strings.Split(msid, " ")
-				if len(split) != 2 {
-					log.Debugf("Invalid msid: %+v", msid)
-					continue
-				}
+	return t.pub.SetRemoteDescription(desc)
+}
 
-				mid := split[0]
-
-				// Request unmute from sfu
-				req := SFUFeedback{
-					StreamID: mid,
-					Video:    "high",
-					Audio:    true,
-				}
-				msg, err := json.Marshal(req)
-				if err != nil {
-					log.Errorf("error marshalling feedback json")
-				}
-				err = t.feedback.Send(msg)
-				if err != nil {
-					log.Errorf("error sending feedback request")
-				}
-			}
-		}
-	} else {
-		log.Errorf("error parsing sdp media")
-	}
-
-	return t.pc.SetRemoteDescription(desc)
+// Answer starts the PeerConnection and generates the localDescription
+func (t *WebRTCTransport) Answer(offer webrtc.SessionDescription) (webrtc.SessionDescription, error) {
+	return t.sub.Answer(offer)
 }
 
 // AddICECandidate accepts an ICE candidate string and adds it to the existing set of candidates
-func (t *WebRTCTransport) AddICECandidate(candidate webrtc.ICECandidateInit) error {
-	return t.pc.AddICECandidate(candidate)
+func (t *WebRTCTransport) AddICECandidate(candidate webrtc.ICECandidateInit, target int) error {
+	switch target {
+	case publisher:
+		if err := t.pub.AddICECandidate(candidate); err != nil {
+			return fmt.Errorf("error setting ice candidate: %w", err)
+		}
+	case subscriber:
+		if err := t.sub.AddICECandidate(candidate); err != nil {
+			return fmt.Errorf("error setting ice candidate: %w", err)
+		}
+	}
+	return nil
 }
 
 // OnICECandidate sets an event handler which is invoked when a new ICE candidate is found.
 // Take note that the handler is gonna be called with a nil pointer when gathering is finished.
-func (t *WebRTCTransport) OnICECandidate(f func(c *webrtc.ICECandidate)) {
-	t.pc.OnICECandidate(f)
+func (t *WebRTCTransport) OnICECandidate(f func(c *webrtc.ICECandidate, target int)) {
+	t.pub.OnICECandidate(func(c *webrtc.ICECandidate) {
+		f(c, publisher)
+	})
+	t.sub.OnICECandidate(func(c *webrtc.ICECandidate) {
+		f(c, subscriber)
+	})
 }
