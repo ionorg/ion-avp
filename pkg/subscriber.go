@@ -1,23 +1,19 @@
 package avp
 
 import (
-	"sync"
-
 	log "github.com/pion/ion-log"
 	"github.com/pion/webrtc/v3"
 )
 
 type Subscriber struct {
-	sync.RWMutex
-	pc *webrtc.PeerConnection
-
+	pc         *webrtc.PeerConnection
 	candidates []webrtc.ICECandidateInit
 
 	onTrackFn func(track *webrtc.Track, receiver *webrtc.RTPReceiver)
 }
 
 // NewSubscriber creates a new Subscriber
-func NewSubscriber(id string, cfg WebRTCTransportConfig) (*Subscriber, error) {
+func NewSubscriber(cfg WebRTCTransportConfig) (*Subscriber, error) {
 	me := webrtc.MediaEngine{}
 	me.RegisterDefaultCodecs()
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(me), webrtc.WithSettingEngine(cfg.setting))

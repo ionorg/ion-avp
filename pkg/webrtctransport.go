@@ -82,13 +82,13 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 		configuration: conf,
 	}
 
-	pub, err := NewPublisher(id, config)
+	pub, err := NewPublisher(config)
 	if err != nil {
 		log.Errorf("Error creating peer connection: %s", err)
 		return nil
 	}
 
-	sub, err := NewSubscriber(id, config)
+	sub, err := NewSubscriber(config)
 	if err != nil {
 		log.Errorf("Error creating peer connection: %s", err)
 		return nil

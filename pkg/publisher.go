@@ -1,26 +1,18 @@
 package avp
 
 import (
-	"sync"
-
 	log "github.com/pion/ion-log"
 
 	"github.com/pion/webrtc/v3"
 )
 
 type Publisher struct {
-	sync.RWMutex
-
-	id string
-	pc *webrtc.PeerConnection
-
+	pc         *webrtc.PeerConnection
 	candidates []webrtc.ICECandidateInit
-
-	closeOnce sync.Once
 }
 
 // NewPublisher creates a new Publisher
-func NewPublisher(id string, cfg WebRTCTransportConfig) (*Publisher, error) {
+func NewPublisher(cfg WebRTCTransportConfig) (*Publisher, error) {
 	api := webrtc.NewAPI(webrtc.WithSettingEngine(cfg.setting))
 	pc, err := api.NewPeerConnection(cfg.configuration)
 
@@ -36,36 +28,18 @@ func NewPublisher(id string, cfg WebRTCTransportConfig) (*Publisher, error) {
 		return nil, errPeerConnectionInitFailed
 	}
 
-	s := &Publisher{
-		id: id,
+	return &Publisher{
 		pc: pc,
-	}
-
-	pc.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
-		log.Debugf("ice connection state: %s", connectionState)
-		switch connectionState {
-		case webrtc.ICEConnectionStateFailed:
-			fallthrough
-		case webrtc.ICEConnectionStateClosed:
-			s.closeOnce.Do(func() {
-				log.Debugf("webrtc ice closed for peer: %s", s.id)
-				if err := s.Close(); err != nil {
-					log.Errorf("webrtc transport close err: %v", err)
-				}
-			})
-		}
-	})
-
-	return s, nil
+	}, nil
 }
 
-func (s *Publisher) CreateOffer() (webrtc.SessionDescription, error) {
-	offer, err := s.pc.CreateOffer(nil)
+func (p *Publisher) CreateOffer() (webrtc.SessionDescription, error) {
+	offer, err := p.pc.CreateOffer(nil)
 	if err != nil {
 		return webrtc.SessionDescription{}, err
 	}
 
-	err = s.pc.SetLocalDescription(offer)
+	err = p.pc.SetLocalDescription(offer)
 	if err != nil {
 		return webrtc.SessionDescription{}, err
 	}
@@ -74,22 +48,22 @@ func (s *Publisher) CreateOffer() (webrtc.SessionDescription, error) {
 }
 
 // OnICECandidate handler
-func (s *Publisher) OnICECandidate(f func(c *webrtc.ICECandidate)) {
-	s.pc.OnICECandidate(f)
+func (p *Publisher) OnICECandidate(f func(c *webrtc.ICECandidate)) {
+	p.pc.OnICECandidate(f)
 }
 
 // AddICECandidate to peer connection
-func (s *Publisher) AddICECandidate(candidate webrtc.ICECandidateInit) error {
-	if s.pc.RemoteDescription() != nil {
-		return s.pc.AddICECandidate(candidate)
+func (p *Publisher) AddICECandidate(candidate webrtc.ICECandidateInit) error {
+	if p.pc.RemoteDescription() != nil {
+		return p.pc.AddICECandidate(candidate)
 	}
-	s.candidates = append(s.candidates, candidate)
+	p.candidates = append(p.candidates, candidate)
 	return nil
 }
 
 // SetRemoteDescription sets the SessionDescription of the remote peer
-func (s *Publisher) SetRemoteDescription(desc webrtc.SessionDescription) error {
-	err := s.pc.SetRemoteDescription(desc)
+func (p *Publisher) SetRemoteDescription(desc webrtc.SessionDescription) error {
+	err := p.pc.SetRemoteDescription(desc)
 	if err != nil {
 		log.Errorf("SetRemoteDescription error: %v", err)
 		return err
@@ -99,6 +73,6 @@ func (s *Publisher) SetRemoteDescription(desc webrtc.SessionDescription) error {
 }
 
 // Close peer
-func (s *Publisher) Close() error {
-	return s.pc.Close()
+func (p *Publisher) Close() error {
+	return p.pc.Close()
 }
