@@ -10,7 +10,7 @@ require (
 	github.com/pion/ion-sfu v1.5.1
 	github.com/pion/rtcp v1.2.4
 	github.com/pion/rtp v1.6.1
-	github.com/pion/transport v0.10.1
+	github.com/pion/transport v0.11.1
 	github.com/pion/webrtc/v3 v3.0.0-beta.12.0.20201115002753-64bbf7eea97d
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
