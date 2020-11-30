@@ -7,7 +7,7 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/lucsky/cuid v1.0.2
 	github.com/pion/ion-log v1.0.0
-	github.com/pion/ion-sfu v1.5.0
+	github.com/pion/ion-sfu v1.5.1
 	github.com/pion/rtcp v1.2.4
 	github.com/pion/rtp v1.6.1
 	github.com/pion/transport v0.10.1
