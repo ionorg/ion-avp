@@ -10,7 +10,6 @@ import (
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/rand"
 )
 
 // newPair creates two new peer connections (an offerer and an answerer) using
@@ -53,12 +52,12 @@ func signalPair(pcOffer *webrtc.PeerConnection, pcAnswer *webrtc.PeerConnection)
 	return pcOffer.SetRemoteDescription(*pcAnswer.LocalDescription())
 }
 
-func sendRTPUntilDone(done <-chan struct{}, t *testing.T, tracks []*webrtc.Track) {
+func sendRTPUntilDone(done <-chan struct{}, t *testing.T, tracks []*webrtc.TrackLocalStaticSample) {
 	for {
 		select {
 		case <-time.After(20 * time.Millisecond):
 			for _, track := range tracks {
-				err := track.WriteSample(media.Sample{Data: []byte{0x01, 0x02, 0x03, 0x04}, Samples: 1})
+				err := track.WriteSample(media.Sample{Data: []byte{0x01, 0x02, 0x03, 0x04}})
 				if err == io.ErrClosedPipe {
 					return
 				}
@@ -78,21 +77,21 @@ func TestNewBuilder_WithOpusName(t *testing.T) {
 	defer report()
 
 	me := webrtc.MediaEngine{}
-	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	_ = me.RegisterDefaultCodecs()
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me))
 	sfu, remote, err := newPair(webrtc.Configuration{}, api)
 	defer remote.Close()
 	defer sfu.Close()
 	assert.NoError(t, err)
 
-	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: MimeTypeOpus}, "audio", "pion")
 	assert.NoError(t, err)
 
 	_, err = remote.AddTrack(track)
 	assert.NoError(t, err)
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
-	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver) {
+	sfu.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 		builder := NewBuilder(track, 200)
 
 		// To ensure that forward and go on build stops immediately
@@ -109,7 +108,7 @@ func TestNewBuilder_WithOpusName(t *testing.T) {
 
 	err = signalPair(remote, sfu)
 	assert.NoError(t, err)
-	sendRTPUntilDone(onBuilderFired.Done(), t, []*webrtc.Track{track})
+	sendRTPUntilDone(onBuilderFired.Done(), t, []*webrtc.TrackLocalStaticSample{track})
 
 }
 
@@ -122,19 +121,19 @@ func TestNewBuilder_WithVP8Packet(t *testing.T) {
 
 	var builder *Builder
 	me := webrtc.MediaEngine{}
-	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	_ = me.RegisterDefaultCodecs()
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me))
 	sfu, remote, err := newPair(webrtc.Configuration{}, api)
 	assert.NoError(t, err)
 
-	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeVP8, rand.Uint32(), "audio", "pion")
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: MimeTypeVP8}, "video", "pion")
 	assert.NoError(t, err)
 
 	_, err = remote.AddTrack(track)
 	assert.NoError(t, err)
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
-	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver) {
+	sfu.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 		builder = NewBuilder(track, 200)
 		defer builder.stop()
 		assert.NotNil(t, builder)
@@ -147,7 +146,7 @@ func TestNewBuilder_WithVP8Packet(t *testing.T) {
 
 	err = signalPair(remote, sfu)
 	assert.NoError(t, err)
-	sendRTPUntilDone(onBuilderFired.Done(), t, []*webrtc.Track{track})
+	sendRTPUntilDone(onBuilderFired.Done(), t, []*webrtc.TrackLocalStaticSample{track})
 
 	assert.NoError(t, remote.Close())
 	assert.NoError(t, sfu.Close())
@@ -165,19 +164,19 @@ func TestNewBuilder_WithVP9Packet(t *testing.T) {
 
 	var builder *Builder
 	me := webrtc.MediaEngine{}
-	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	_ = me.RegisterDefaultCodecs()
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me))
 	sfu, remote, err := newPair(webrtc.Configuration{}, api)
 	assert.NoError(t, err)
 
-	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeVP9, rand.Uint32(), "audio", "pion")
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: MimeTypeVP9}, "video", "pion")
 	assert.NoError(t, err)
 
 	_, err = remote.AddTrack(track)
 	assert.NoError(t, err)
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
-	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver) {
+	sfu.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 		builder = NewBuilder(track, 200)
 		defer builder.stop()
 		assert.NotNil(t, builder)
@@ -195,7 +194,7 @@ func TestNewBuilder_WithVP9Packet(t *testing.T) {
 
 	err = signalPair(remote, sfu)
 	assert.NoError(t, err)
-	sendRTPUntilDone(onBuilderFired.Done(), t, []*webrtc.Track{track})
+	sendRTPUntilDone(onBuilderFired.Done(), t, []*webrtc.TrackLocalStaticSample{track})
 
 	assert.NoError(t, remote.Close())
 	assert.NoError(t, sfu.Close())
@@ -212,22 +211,22 @@ func TestNewBuilder_WithH264Packet(t *testing.T) {
 	defer lim.Stop()
 
 	me := webrtc.MediaEngine{}
-	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	_ = me.RegisterDefaultCodecs()
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me))
 	sfu, remote, err := newPair(webrtc.Configuration{}, api)
 	assert.NoError(t, err)
 
 	defer sfu.Close()
 	defer remote.Close()
 
-	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeH264, rand.Uint32(), "video", "pion")
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: MimeTypeH264}, "video", "pion")
 	assert.NoError(t, err)
 
 	_, err = remote.AddTrack(track)
 	assert.NoError(t, err)
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
-	sfu.OnTrack(func(track *webrtc.Track, _ *webrtc.RTPReceiver) {
+	sfu.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 		builder := NewBuilder(track, 200)
 		assert.NotNil(t, builder)
 
@@ -245,5 +244,5 @@ func TestNewBuilder_WithH264Packet(t *testing.T) {
 
 	err = signalPair(remote, sfu)
 	assert.NoError(t, err)
-	sendRTPUntilDone(onBuilderFired.Done(), t, []*webrtc.Track{track})
+	sendRTPUntilDone(onBuilderFired.Done(), t, []*webrtc.TrackLocalStaticSample{track})
 }

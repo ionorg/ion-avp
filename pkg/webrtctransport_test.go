@@ -2,11 +2,9 @@ package avp
 
 import (
 	"context"
-	"math/rand"
 	"testing"
 	"time"
 
-	"github.com/pion/rtcp"
 	"github.com/pion/transport/test"
 	"github.com/pion/webrtc/v3"
 	"github.com/stretchr/testify/assert"
@@ -62,13 +60,13 @@ func TestNewWebRTCTransport(t *testing.T) {
 	defer report()
 
 	me := webrtc.MediaEngine{}
-	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	_ = me.RegisterDefaultCodecs()
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me))
 	remote, err := api.NewPeerConnection(webrtc.Configuration{})
 	assert.NoError(t, err)
 	defer remote.Close()
 
-	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: MimeTypeOpus}, "audio", "pion")
 	assert.NoError(t, err)
 
 	_, err = remote.AddTrack(track)
@@ -91,7 +89,7 @@ func TestNewWebRTCTransport(t *testing.T) {
 	assert.NoError(t, transport.Close())
 	assert.NotNil(t, transport)
 
-	sendRTPUntilDone(closed, t, []*webrtc.Track{track})
+	sendRTPUntilDone(closed, t, []*webrtc.TrackLocalStaticSample{track})
 }
 
 func TestNewWebRTCTransportWithBuilder(t *testing.T) {
@@ -99,12 +97,12 @@ func TestNewWebRTCTransportWithBuilder(t *testing.T) {
 	defer report()
 
 	me := webrtc.MediaEngine{}
-	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	_ = me.RegisterDefaultCodecs()
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me))
 	remote, err := api.NewPeerConnection(webrtc.Configuration{})
 	assert.NoError(t, err)
 
-	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: MimeTypeOpus}, "audio", "pion")
 	assert.NoError(t, err)
 
 	_, err = remote.AddTrack(track)
@@ -142,8 +140,8 @@ func TestNewWebRTCTransportWithOnNegotiation(t *testing.T) {
 	defer report()
 
 	me := webrtc.MediaEngine{}
-	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	_ = me.RegisterDefaultCodecs()
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me))
 	remote, err := api.NewPeerConnection(webrtc.Configuration{})
 	assert.NoError(t, err)
 
@@ -158,7 +156,7 @@ func TestNewWebRTCTransportWithOnNegotiation(t *testing.T) {
 		close(negotiated)
 	})
 
-	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeOpus, rand.Uint32(), "audio", "pion")
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: MimeTypeOpus}, "audio", "pion")
 	assert.NoError(t, err)
 
 	sender, err := remote.AddTrack(track)
@@ -169,7 +167,6 @@ func TestNewWebRTCTransportWithOnNegotiation(t *testing.T) {
 	err = remote.RemoveTrack(sender)
 	assert.NoError(t, err)
 
-	assert.NoError(t, remote.WriteRTCP([]rtcp.Packet{&rtcp.ReceiverEstimatedMaximumBitrate{Bitrate: 10000000, SenderSSRC: track.SSRC()}}))
 	assert.NoError(t, transport.Close())
 	assert.NoError(t, remote.Close())
 }
@@ -179,13 +176,13 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	defer report()
 
 	me := webrtc.MediaEngine{}
-	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	_ = me.RegisterDefaultCodecs()
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me))
 	remote, err := api.NewPeerConnection(webrtc.Configuration{})
 	assert.NoError(t, err)
 
 	tid := "tid"
-	track, err := remote.NewTrack(webrtc.DefaultPayloadTypeVP8, rand.Uint32(), tid, "pion")
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: MimeTypeVP8}, tid, "pion")
 	assert.NoError(t, err)
 
 	sender, err := remote.AddTrack(track)
@@ -210,7 +207,7 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 	assert.NoError(t, remote.SetRemoteDescription(answer))
 
 	done := waitForBuilder(transport, tid)
-	sendRTPUntilDone(done, t, []*webrtc.Track{track})
+	sendRTPUntilDone(done, t, []*webrtc.TrackLocalStaticSample{track})
 
 	err = transport.Process("123", tid, "test-eid", []byte{})
 	assert.NoError(t, err)
@@ -220,7 +217,7 @@ func TestNewWebRTCTransportWithExpectedBuilder(t *testing.T) {
 
 	done = waitForRemoveTrack(transport, tid)
 
-	sendRTPUntilDone(done, t, []*webrtc.Track{track})
+	sendRTPUntilDone(done, t, []*webrtc.TrackLocalStaticSample{track})
 
 	assert.NoError(t, transport.Close())
 	assert.NoError(t, remote.Close())
