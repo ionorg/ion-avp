@@ -105,8 +105,14 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 
 	sub.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver) {
 		id := track.ID()
-		log.Infof("Got track: %s", id)
-		builder := NewBuilder(track, 200)
+		log.Debugf("Got track: %s", id)
+
+		maxlate := c.SampleBuilder.AudioMaxLate
+		if track.Kind() == webrtc.RTPCodecTypeVideo {
+			maxlate = c.SampleBuilder.VideoMaxLate
+		}
+
+		builder := NewBuilder(track, maxlate)
 		t.mu.Lock()
 		defer t.mu.Unlock()
 		t.builders[id] = builder
