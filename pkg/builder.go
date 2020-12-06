@@ -44,17 +44,13 @@ type Builder struct {
 // NewBuilder Initialize a new audio sample builder
 func NewBuilder(track *webrtc.TrackRemote, maxLate uint16) *Builder {
 	var depacketizer rtp.Depacketizer
-	var checker rtp.PartitionHeadChecker
 	switch strings.ToLower(track.Codec().MimeType) {
 	case strings.ToLower(MimeTypeOpus):
 		depacketizer = &codecs.OpusPacket{}
-		checker = &codecs.OpusPartitionHeadChecker{}
 	case strings.ToLower(MimeTypeVP8):
 		depacketizer = &codecs.VP8Packet{}
-		checker = &codecs.VP8PartitionHeadChecker{}
 	case strings.ToLower(MimeTypeVP9):
 		depacketizer = &codecs.VP9Packet{}
-		checker = &codecs.VP9PartitionHeadChecker{}
 	case strings.ToLower(MimeTypeH264):
 		depacketizer = &codecs.H264Packet{}
 	}
@@ -63,10 +59,6 @@ func NewBuilder(track *webrtc.TrackRemote, maxLate uint16) *Builder {
 		builder: samplebuilder.New(maxLate, depacketizer, track.Codec().ClockRate),
 		track:   track,
 		out:     make(chan *Sample, maxSize),
-	}
-
-	if checker != nil {
-		samplebuilder.WithPartitionHeadChecker(checker)(b.builder)
 	}
 
 	go b.build()

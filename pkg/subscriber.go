@@ -1,6 +1,8 @@
 package avp
 
 import (
+	"github.com/pion/interceptor"
+	"github.com/pion/interceptor/pkg/nack"
 	log "github.com/pion/ion-log"
 	"github.com/pion/webrtc/v3"
 )
@@ -20,7 +22,16 @@ func NewSubscriber(cfg WebRTCTransportConfig) (*Subscriber, error) {
 		log.Errorf("NewSubscriber error: %v", err)
 		return nil, errPeerConnectionInitFailed
 	}
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me), webrtc.WithSettingEngine(cfg.setting))
+
+	ni, err := nack.NewGeneratorInterceptor()
+	if err != nil {
+		log.Errorf("NewSubscriber error: %v", err)
+		return nil, errPeerConnectionInitFailed
+	}
+	ir := &interceptor.Registry{}
+	ir.Add(ni)
+
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me), webrtc.WithSettingEngine(cfg.setting), webrtc.WithInterceptorRegistry(ir))
 	pc, err := api.NewPeerConnection(cfg.configuration)
 
 	if err != nil {
