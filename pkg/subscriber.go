@@ -9,14 +9,14 @@ type Subscriber struct {
 	pc         *webrtc.PeerConnection
 	candidates []webrtc.ICECandidateInit
 
-	onTrackFn func(track *webrtc.Track, receiver *webrtc.RTPReceiver)
+	onTrackFn func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver)
 }
 
 // NewSubscriber creates a new Subscriber
 func NewSubscriber(cfg WebRTCTransportConfig) (*Subscriber, error) {
 	me := webrtc.MediaEngine{}
 	me.RegisterDefaultCodecs()
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(me), webrtc.WithSettingEngine(cfg.setting))
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(&me), webrtc.WithSettingEngine(cfg.setting))
 	pc, err := api.NewPeerConnection(cfg.configuration)
 
 	if err != nil {
@@ -28,7 +28,7 @@ func NewSubscriber(cfg WebRTCTransportConfig) (*Subscriber, error) {
 		pc: pc,
 	}
 
-	pc.OnTrack(func(track *webrtc.Track, receiver *webrtc.RTPReceiver) {
+	pc.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 		if s.onTrackFn != nil {
 			s.onTrackFn(track, receiver)
 		}
@@ -37,7 +37,7 @@ func NewSubscriber(cfg WebRTCTransportConfig) (*Subscriber, error) {
 	return s, nil
 }
 
-func (s *Subscriber) OnTrack(f func(track *webrtc.Track, receiver *webrtc.RTPReceiver)) {
+func (s *Subscriber) OnTrack(f func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver)) {
 	s.onTrackFn = f
 }
 

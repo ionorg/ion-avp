@@ -3,6 +3,7 @@ package avp
 import (
 	"errors"
 	"io"
+	"strings"
 	"sync"
 
 	log "github.com/pion/ion-log"
@@ -13,7 +14,14 @@ import (
 )
 
 const (
-	maxSize = 100
+	maxSize      = 100
+	MimeTypeH264 = "video/h264"
+	MimeTypeOpus = "audio/opus"
+	MimeTypeVP8  = "video/vp8"
+	MimeTypeVP9  = "video/vp9"
+	MimeTypeG722 = "audio/G722"
+	MimeTypePCMU = "audio/PCMU"
+	MimeTypePCMA = "audio/PCMA"
 )
 
 var (
@@ -29,30 +37,30 @@ type Builder struct {
 	builder       *samplebuilder.SampleBuilder
 	elements      []Element
 	sequence      uint16
-	track         *webrtc.Track
+	track         *webrtc.TrackRemote
 	out           chan *Sample
 }
 
 // NewBuilder Initialize a new audio sample builder
-func NewBuilder(track *webrtc.Track, maxLate uint16) *Builder {
+func NewBuilder(track *webrtc.TrackRemote, maxLate uint16) *Builder {
 	var depacketizer rtp.Depacketizer
 	var checker rtp.PartitionHeadChecker
-	switch track.Codec().Name {
-	case webrtc.Opus:
+	switch strings.ToLower(track.Codec().MimeType) {
+	case strings.ToLower(MimeTypeOpus):
 		depacketizer = &codecs.OpusPacket{}
 		checker = &codecs.OpusPartitionHeadChecker{}
-	case webrtc.VP8:
+	case strings.ToLower(MimeTypeVP8):
 		depacketizer = &codecs.VP8Packet{}
 		checker = &codecs.VP8PartitionHeadChecker{}
-	case webrtc.VP9:
+	case strings.ToLower(MimeTypeVP9):
 		depacketizer = &codecs.VP9Packet{}
 		checker = &codecs.VP9PartitionHeadChecker{}
-	case webrtc.H264:
+	case strings.ToLower(MimeTypeH264):
 		depacketizer = &codecs.H264Packet{}
 	}
 
 	b := &Builder{
-		builder: samplebuilder.New(maxLate, depacketizer),
+		builder: samplebuilder.New(maxLate, depacketizer, track.Codec().ClockRate),
 		track:   track,
 		out:     make(chan *Sample, maxSize),
 	}
@@ -75,7 +83,7 @@ func (b *Builder) AttachElement(e Element) {
 }
 
 // Track returns the builders underlying track
-func (b *Builder) Track() *webrtc.Track {
+func (b *Builder) Track() *webrtc.TrackRemote {
 	return b.track
 }
 
@@ -120,7 +128,7 @@ func (b *Builder) build() {
 
 			b.out <- &Sample{
 				ID:             b.track.ID(),
-				Type:           int(b.track.Codec().Type),
+				Type:           int(b.track.Kind()),
 				SequenceNumber: b.sequence,
 				Timestamp:      timestamp,
 				Payload:        sample.Data,

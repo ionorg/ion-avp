@@ -103,7 +103,7 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 		processes: make(map[string]Element),
 	}
 
-	sub.OnTrack(func(track *webrtc.Track, recv *webrtc.RTPReceiver) {
+	sub.OnTrack(func(track *webrtc.TrackRemote, recv *webrtc.RTPReceiver) {
 		id := track.ID()
 		log.Debugf("Got track: %s", id)
 
@@ -132,7 +132,7 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 		}
 
 		if track.Kind() == webrtc.RTPCodecTypeVideo {
-			err := sub.pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{SenderSSRC: track.SSRC(), MediaSSRC: track.SSRC()}})
+			err := sub.pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{SenderSSRC: uint32(track.SSRC()), MediaSSRC: uint32(track.SSRC())}})
 			if err != nil {
 				log.Errorf("error writing pli %s", err)
 			}
@@ -176,7 +176,7 @@ func (t *WebRTCTransport) pliLoop(cycle uint) {
 
 		var pkts []rtcp.Packet
 		for _, b := range builders {
-			pkts = append(pkts, &rtcp.PictureLossIndication{SenderSSRC: b.Track().SSRC(), MediaSSRC: b.Track().SSRC()})
+			pkts = append(pkts, &rtcp.PictureLossIndication{SenderSSRC: uint32(b.Track().SSRC()), MediaSSRC: uint32(b.Track().SSRC())})
 		}
 
 		err := t.sub.pc.WriteRTCP(pkts)
