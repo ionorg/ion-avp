@@ -114,9 +114,7 @@ func (b *Builder) build() {
 		b.builder.Push(pkt)
 
 		for {
-			log.Tracef("Read sample from builder: %s", b.Track().ID())
 			sample, timestamp := b.builder.PopWithTimestamp()
-			log.Tracef("Got sample from builder: %s sample: %v", b.Track().ID(), sample)
 
 			if b.stopped.get() {
 				return
@@ -125,6 +123,8 @@ func (b *Builder) build() {
 			if sample == nil {
 				break
 			}
+
+			log.Tracef("Sample from builder: %s sample: %v", b.Track().ID(), sample)
 
 			b.out <- &Sample{
 				ID:             b.track.ID(),

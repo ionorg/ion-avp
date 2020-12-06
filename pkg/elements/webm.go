@@ -70,7 +70,7 @@ func (s *WebmSaver) pushOpus(sample *avp.Sample) {
 		if s.audioTimestamp == 0 {
 			s.audioTimestamp = sample.Timestamp
 		}
-		t := (sample.Timestamp - s.audioTimestamp)
+		t := (sample.Timestamp - s.audioTimestamp) / 48
 		if _, err := s.audioWriter.Write(true, int64(t), sample.Payload.([]byte)); err != nil {
 			log.Errorf("audio writer err: %s", err)
 		}
@@ -98,7 +98,7 @@ func (s *WebmSaver) pushVP8(sample *avp.Sample) {
 		if s.videoTimestamp == 0 {
 			s.videoTimestamp = sample.Timestamp
 		}
-		t := (sample.Timestamp - s.videoTimestamp)
+		t := (sample.Timestamp - s.videoTimestamp) / 90
 		if _, err := s.videoWriter.Write(videoKeyframe, int64(t), payload); err != nil {
 			log.Errorf("video write err: %s", err)
 		}
