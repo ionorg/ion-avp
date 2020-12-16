@@ -103,7 +103,9 @@ func main() {
 	log.Infof("--- AVP Node Listening at %s ---", addr)
 
 	s := grpc.NewServer()
-	srv := server.NewAVPServer(conf.Avp, map[string]avp.ElementFun{})
+	srv := server.NewAVPServer(conf.Avp, map[string]avp.ElementFun{
+		"webmsaver": createWebmSaver,
+	})
 	pb.RegisterAVPServer(s, srv)
 
 	if err := s.Serve(lis); err != nil {
