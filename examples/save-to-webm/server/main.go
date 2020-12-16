@@ -3,14 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"path"
 
-	grpc "github.com/pion/ion-avp/cmd/signal/grpc/server"
+	pb "github.com/pion/ion-avp/cmd/signal/grpc/proto"
+	"github.com/pion/ion-avp/cmd/signal/grpc/server"
 	avp "github.com/pion/ion-avp/pkg"
 	"github.com/pion/ion-avp/pkg/elements"
 	log "github.com/pion/ion-log"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 )
 
 type webmsaver struct {
@@ -93,9 +96,21 @@ func main() {
 	fixByFunc := []string{}
 	log.Init(conf.Avp.Log.Level, fixByFile, fixByFunc)
 
-	grpc.NewServer(addr, conf.Avp, map[string]avp.ElementFun{
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Panicf("failed to listen: %v", err)
+	}
+	log.Infof("--- AVP Node Listening at %s ---", addr)
+
+	s := grpc.NewServer()
+	srv := server.NewAVPServer(conf.Avp, map[string]avp.ElementFun{
 		"webmsaver": createWebmSaver,
 	})
+	pb.RegisterAVPServer(s, srv)
 
-	select {}
+	if err := s.Serve(lis); err != nil {
+		log.Panicf("failed to serve: %v", err)
+	}
+
+	log.Infof("server finished")
 }
