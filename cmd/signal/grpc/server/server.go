@@ -2,12 +2,10 @@ package server
 
 import (
 	"io"
-	"net"
 
 	pb "github.com/pion/ion-avp/cmd/signal/grpc/proto"
 	avp "github.com/pion/ion-avp/pkg"
 	log "github.com/pion/ion-log"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -17,24 +15,10 @@ type server struct {
 	avp *AVP
 }
 
-// NewServer creates a new grpc avp server
-func NewServer(addr string, conf avp.Config, elems map[string]avp.ElementFun) *grpc.Server {
-	lis, err := net.Listen("tcp", addr)
-	if err != nil {
-		log.Panicf("failed to listen: %v", err)
-	}
-	s := grpc.NewServer()
-	pb.RegisterAVPServer(s, &server{
+func NewAVPServer(conf avp.Config, elems map[string]avp.ElementFun) pb.AVPServer {
+	return &server{
 		avp: NewAVP(conf, elems),
-	})
-
-	log.Infof("--- AVP Node Listening at %s ---", addr)
-
-	if err := s.Serve(lis); err != nil {
-		log.Panicf("failed to serve: %v", err)
 	}
-
-	return s
 }
 
 // Signal handler for avp server

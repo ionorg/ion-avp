@@ -3,12 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 
-	grpc "github.com/pion/ion-avp/cmd/signal/grpc/server"
+	pb "github.com/pion/ion-avp/cmd/signal/grpc/proto"
+	"github.com/pion/ion-avp/cmd/signal/grpc/server"
 	avp "github.com/pion/ion-avp/pkg"
 	log "github.com/pion/ion-log"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -74,7 +77,19 @@ func main() {
 	fixByFunc := []string{}
 	log.Init(conf.Log.Level, fixByFile, fixByFunc)
 
-	grpc.NewServer(addr, conf, map[string]avp.ElementFun{
-		// fill in elements
-	})
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Panicf("failed to listen: %v", err)
+	}
+	log.Infof("--- AVP Node Listening at %s ---", addr)
+
+	s := grpc.NewServer()
+	srv := server.NewAVPServer(conf, map[string]avp.ElementFun{})
+	pb.RegisterAVPServer(s, srv)
+
+	if err := s.Serve(lis); err != nil {
+		log.Panicf("failed to serve: %v", err)
+	}
+
+	log.Infof("server finished")
 }
