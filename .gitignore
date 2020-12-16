@@ -1,13 +1,24 @@
-.*.sw[op]
-logs
-bin
-configs/avp.pid
-cmd/avp/avp
-./ion
-.idea
+### JetBrains IDE ###
+#####################
+.idea/
+
+### Emacs Temporary Files ###
+#############################
+*~
+
+### Folders ###
+###############
+bin/
+vendor/
 node_modules/
+
+### Files ###
+#############
+*.ivf
+*.ogg
+tags
 cover.out
-main
-.DS_Store
-out
-.vscode
+*.sw[poe]
+*.wasm
+examples/sfu-ws/cert.pem
+examples/sfu-ws/key.pem
