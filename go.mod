@@ -14,7 +14,7 @@ require (
 	github.com/pion/webrtc/v3 v3.0.0-beta.15.0.20201209023348-63401a8837fb
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	github.com/xlab/libvpx-go v0.0.0-20200321114045-4c41f8a7acef
+	github.com/xlab/libvpx-go v0.0.0-20201217121537-9736e1703824
 	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
 )
