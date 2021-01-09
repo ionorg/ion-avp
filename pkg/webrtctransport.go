@@ -112,6 +112,11 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 			maxlate = c.SampleBuilder.VideoMaxLate
 		}
 
+		if maxlate == 0 {
+			log.Warnf("maxlate should not be 0. Using 100.")
+			maxlate = 100
+		}
+
 		builder := NewBuilder(track, maxlate)
 		t.mu.Lock()
 		defer t.mu.Unlock()

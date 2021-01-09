@@ -101,7 +101,7 @@ func (b *Builder) build() {
 			return
 		}
 
-		pkt, err := b.track.ReadRTP()
+		pkt, _, err := b.track.ReadRTP()
 		if err != nil {
 			if err == io.EOF {
 				b.stop()
