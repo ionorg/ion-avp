@@ -44,7 +44,7 @@ var rawKeyframePkt = []byte{
 var rawOpusPkt = []byte{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x90, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x90}
 
 func TestWebMSaver_BlockWriterInit(t *testing.T) {
-	saver := NewWebmSaver()
+	saver := NewWebmSaver(nil)
 
 	writer := NewBufWriter()
 	saver.Attach(writer)
@@ -75,8 +75,7 @@ func TestWebMSaver_BlockWriterInit(t *testing.T) {
 }
 
 func TestWebMSave_AudioOnly(t *testing.T) {
-	saver := NewWebmSaver()
-	saver.SetAudioOnly()
+	saver := NewWebmSaver(&WebmSaverConfig{Audio: true, Video: false})
 
 	writer := NewBufWriter()
 	saver.Attach(writer)
