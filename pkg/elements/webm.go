@@ -18,6 +18,7 @@ type WebmSaver struct {
 	audioWriter, videoWriter       webm.BlockWriteCloser
 	audioTimestamp, videoTimestamp uint32
 	sampleWriter                   *SampleWriter
+	isAudioOnly                    bool
 }
 
 // NewWebmSaver Initialize a new webm saver
@@ -25,6 +26,12 @@ func NewWebmSaver() *WebmSaver {
 	return &WebmSaver{
 		sampleWriter: NewSampleWriter(),
 	}
+}
+
+// Mark that we will only be sending audio Opus packets, no video.
+// Otherwise we wait for the first video keyframe to start saving.
+func (s *WebmSaver) SetAudioOnly() {
+	s.isAudioOnly = true
 }
 
 // Write sample to webmsaver
@@ -66,6 +73,9 @@ func (s *WebmSaver) Close() {
 }
 
 func (s *WebmSaver) pushOpus(sample *avp.Sample) {
+	if s.audioWriter == nil && s.isAudioOnly {
+		s.initWriter(0, 0)
+	}
 	if s.audioWriter != nil {
 		if s.audioTimestamp == 0 {
 			s.audioTimestamp = sample.Timestamp
@@ -144,9 +154,11 @@ func (s *WebmSaver) initWriter(width, height int) {
 	if err != nil {
 		log.Errorf("init writer err: %s", err)
 	}
-	log.Infof("WebM saver has started with video width=%d, height=%d\n", width, height)
 	s.audioWriter = ws[0]
-	s.videoWriter = ws[1]
+	if !s.isAudioOnly {
+		s.videoWriter = ws[1]
+		log.Infof("WebM saver has started with video width=%d, height=%d\n", width, height)
+	}
 }
 
 // SampleWriter for writing samples

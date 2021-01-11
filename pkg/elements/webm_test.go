@@ -73,3 +73,20 @@ func TestWebMSaver_BlockWriterInit(t *testing.T) {
 
 	assert.Len(t, header.Segment.Tracks.TrackEntry, 2)
 }
+
+func TestWebMSave_AudioOnly(t *testing.T) {
+	saver := NewWebmSaver()
+	saver.SetAudioOnly()
+
+	writer := NewBufWriter()
+	saver.Attach(writer)
+
+	err := saver.Write(&avp.Sample{
+		Type:    avp.TypeOpus,
+		Payload: rawOpusPkt,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, saver.audioWriter)
+
+	saver.Close()
+}
