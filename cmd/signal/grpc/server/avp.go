@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	avp "github.com/pion/ion-avp/pkg"
@@ -52,4 +53,20 @@ func (a *AVP) Process(ctx context.Context, addr, pid, sid, tid, eid string, conf
 	}
 
 	return t.Process(pid, tid, eid, config)
+}
+
+// CloseSession stops all processing for a session. Call it when the session ends.
+func (a *AVP) CloseSession(addr, sid string) error {
+	c := a.clients[addr]
+	if c == nil {
+		return fmt.Errorf("missing grpc client for %s", addr)
+	}
+	t, err := c.GetTransport(sid)
+	if err != nil {
+		return fmt.Errorf("err GetTransport for session %s: %w", sid, err)
+	}
+	if t == nil {
+		return fmt.Errorf("missing transport for session %s", sid)
+	}
+	return t.Close()
 }
