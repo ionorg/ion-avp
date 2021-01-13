@@ -158,9 +158,17 @@ func (s *WebmSaver) initWriter(width, height int) {
 		audioIdx = 0
 	}
 	if s.cfg.Video {
+		var trackNum uint64
+		if s.cfg.Audio {
+			trackNum = 2
+			videoIdx = 1
+		} else {
+			trackNum = 1
+			videoIdx = 0
+		}
 		tracks = append(tracks, webm.TrackEntry{
 			Name:            "Video",
-			TrackNumber:     2,
+			TrackNumber:     trackNum,
 			TrackUID:        67890,
 			CodecID:         "V_VP8",
 			TrackType:       1,
@@ -170,11 +178,6 @@ func (s *WebmSaver) initWriter(width, height int) {
 				PixelHeight: uint64(height),
 			},
 		})
-		if s.cfg.Audio {
-			videoIdx = 1
-		} else {
-			videoIdx = 0
-		}
 	}
 	ws, err := webm.NewSimpleBlockWriter(s.sampleWriter, tracks, options...)
 	if err != nil {
