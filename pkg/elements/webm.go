@@ -16,6 +16,7 @@ type WebmSaver struct {
 	sync.Mutex
 	closed                         bool
 	audioWriter, videoWriter       webm.BlockWriteCloser
+	vttWriter                      webm.BlockWriteCloser
 	audioTimestamp, videoTimestamp uint32
 	sampleWriter                   *SampleWriter
 }
@@ -29,6 +30,10 @@ func NewWebmSaver() *WebmSaver {
 
 // Write sample to webmsaver
 func (s *WebmSaver) Write(sample *avp.Sample) error {
+	if sample.PrevDroppedPackets > 0 {
+		s.pushDropped(sample)
+	}
+
 	if sample.Type == avp.TypeVP8 {
 		s.pushVP8(sample)
 	} else if sample.Type == avp.TypeOpus {
@@ -61,6 +66,35 @@ func (s *WebmSaver) Close() {
 	if s.videoWriter != nil {
 		if err := s.videoWriter.Close(); err != nil {
 			log.Errorf("video close err: %s", err)
+		}
+	}
+}
+
+func (s *WebmSaver) pushDropped(sample *avp.Sample) {
+	if s.vttWriter != nil {
+		var metaPayload [2]byte
+		// big endian encoded value as two bytes
+		metaPayload[0] = uint8(sample.PrevDroppedPackets >> 8)
+		metaPayload[1] = uint8(sample.PrevDroppedPackets & 0xFF)
+
+		var referenceTimestamp uint32
+		var referenceHzRate uint32
+
+		if sample.Type == avp.TypeVP8 {
+			referenceHzRate = 90
+			referenceTimestamp = s.videoTimestamp
+		} else if sample.Type == avp.TypeOpus {
+			referenceHzRate = 48
+			referenceTimestamp = s.audioTimestamp
+		}
+
+		if referenceTimestamp == 0 {
+			referenceTimestamp = sample.Timestamp
+		}
+
+		t := (sample.Timestamp - referenceTimestamp) / referenceHzRate
+		if _, err := s.vttWriter.Write(true, int64(t), metaPayload[:]); err != nil {
+			log.Errorf("vtt writer err: %s", err)
 		}
 	}
 }
@@ -139,6 +173,13 @@ func (s *WebmSaver) initWriter(width, height int) {
 					PixelWidth:  uint64(width),
 					PixelHeight: uint64(height),
 				},
+			}, {
+				Name:            "VttDroppedPacketMeta",
+				TrackNumber:     3,
+				TrackUID:        98765,
+				CodecID:         "D_WEBVTT/METADATA",
+				TrackType:       0x21,
+				DefaultDuration: 20000000,
 			},
 		}, options...)
 	if err != nil {
@@ -147,6 +188,7 @@ func (s *WebmSaver) initWriter(width, height int) {
 	log.Infof("WebM saver has started with video width=%d, height=%d\n", width, height)
 	s.audioWriter = ws[0]
 	s.videoWriter = ws[1]
+	s.vttWriter = ws[2]
 }
 
 // SampleWriter for writing samples

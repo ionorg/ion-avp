@@ -111,10 +111,14 @@ func (b *Builder) build() {
 			continue
 		}
 
+		log.Infof("pushed packet onto stack", pkt.SequenceNumber)
 		b.builder.Push(pkt)
 
 		for {
-			sample, timestamp := b.builder.PopWithTimestamp()
+			sample := b.builder.Pop()
+			if sample != nil {
+				log.Infof("popped from the stack", sample.Timestamp, sample.SourceMetadata.PrevDroppedPackets)
+			}
 
 			if b.stopped.get() {
 				return
@@ -127,11 +131,12 @@ func (b *Builder) build() {
 			log.Tracef("Sample from builder: %s sample: %v", b.Track().ID(), sample)
 
 			b.out <- &Sample{
-				ID:             b.track.ID(),
-				Type:           int(b.track.Kind()),
-				SequenceNumber: b.sequence,
-				Timestamp:      timestamp,
-				Payload:        sample.Data,
+				ID:                 b.track.ID(),
+				Type:               int(b.track.Kind()),
+				SequenceNumber:     b.sequence,
+				Timestamp:          sample.SourceMetadata.Timestamp,
+				PrevDroppedPackets: sample.SourceMetadata.PrevDroppedPackets,
+				Payload:            sample.Data,
 			}
 			b.sequence++
 		}
