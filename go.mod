@@ -11,9 +11,9 @@ require (
 	github.com/pion/rtcp v1.2.6
 	github.com/pion/rtp v1.6.2
 	github.com/pion/transport v0.12.2
-	github.com/pion/webrtc/v3 v3.0.3
+	github.com/pion/webrtc/v3 v3.0.4
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/xlab/libvpx-go v0.0.0-20201217121537-9736e1703824
 	google.golang.org/grpc v1.34.1
 	google.golang.org/protobuf v1.25.0
