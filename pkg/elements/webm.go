@@ -16,7 +16,7 @@ type WebmSaver struct {
 	sync.Mutex
 	closed                         bool
 	audioWriter, videoWriter       webm.BlockWriteCloser
-	vttWriter                      webm.BlockWriteCloser
+	vttAudioWriter, vttVideoWriter webm.BlockWriteCloser
 	audioTimestamp, videoTimestamp uint32
 	sampleWriter                   *SampleWriter
 }
@@ -30,13 +30,15 @@ func NewWebmSaver() *WebmSaver {
 
 // Write sample to webmsaver
 func (s *WebmSaver) Write(sample *avp.Sample) error {
-	if sample.PrevDroppedPackets > 0 {
-		s.pushDropped(sample)
-	}
-
 	if sample.Type == avp.TypeVP8 {
+		if sample.PrevDroppedPackets > 0 {
+			s.pushVideoDropped(sample)
+		}
 		s.pushVP8(sample)
 	} else if sample.Type == avp.TypeOpus {
+		if sample.PrevDroppedPackets > 0 {
+			s.pushAudioDropped(sample)
+		}
 		s.pushOpus(sample)
 	}
 	return nil
@@ -70,31 +72,40 @@ func (s *WebmSaver) Close() {
 	}
 }
 
-func (s *WebmSaver) pushDropped(sample *avp.Sample) {
-	if s.vttWriter != nil {
+func (s *WebmSaver) pushAudioDropped(sample *avp.Sample) {
+	if s.vttAudioWriter != nil {
 		var metaPayload [2]byte
 		// big endian encoded value as two bytes
 		metaPayload[0] = uint8(sample.PrevDroppedPackets >> 8)
 		metaPayload[1] = uint8(sample.PrevDroppedPackets & 0xFF)
 
-		var referenceTimestamp uint32
-		var referenceHzRate uint32
-
-		if sample.Type == avp.TypeVP8 {
-			referenceHzRate = 90
-			referenceTimestamp = s.videoTimestamp
-		} else if sample.Type == avp.TypeOpus {
-			referenceHzRate = 48
-			referenceTimestamp = s.audioTimestamp
-		}
-
+		referenceTimestamp := s.audioTimestamp
 		if referenceTimestamp == 0 {
 			referenceTimestamp = sample.Timestamp
 		}
 
-		t := (sample.Timestamp - referenceTimestamp) / referenceHzRate
-		if _, err := s.vttWriter.Write(true, int64(t), metaPayload[:]); err != nil {
-			log.Errorf("vtt writer err: %s", err)
+		t := (sample.Timestamp - referenceTimestamp) / 48
+		if _, err := s.vttAudioWriter.Write(true, int64(t), metaPayload[:]); err != nil {
+			log.Errorf("vtt audio writer err: %s", err)
+		}
+	}
+}
+
+func (s *WebmSaver) pushVideoDropped(sample *avp.Sample) {
+	if s.vttAudioWriter != nil {
+		var metaPayload [2]byte
+		// big endian encoded value as two bytes
+		metaPayload[0] = uint8(sample.PrevDroppedPackets >> 8)
+		metaPayload[1] = uint8(sample.PrevDroppedPackets & 0xFF)
+
+		referenceTimestamp := s.videoTimestamp
+		if referenceTimestamp == 0 {
+			referenceTimestamp = sample.Timestamp
+		}
+
+		t := (sample.Timestamp - referenceTimestamp) / 90
+		if _, err := s.vttVideoWriter.Write(true, int64(t), metaPayload[:]); err != nil {
+			log.Errorf("vtt video writer err: %s", err)
 		}
 	}
 }
@@ -174,9 +185,16 @@ func (s *WebmSaver) initWriter(width, height int) {
 					PixelHeight: uint64(height),
 				},
 			}, {
-				Name:            "VttDroppedPacketMeta",
+				Name:            "VttAudioDroppedPacketMeta",
 				TrackNumber:     3,
 				TrackUID:        98765,
+				CodecID:         "D_WEBVTT/METADATA",
+				TrackType:       0x21,
+				DefaultDuration: 20000000,
+			}, {
+				Name:            "VttVideoDroppedPacketMeta",
+				TrackNumber:     4,
+				TrackUID:        54321,
 				CodecID:         "D_WEBVTT/METADATA",
 				TrackType:       0x21,
 				DefaultDuration: 20000000,
@@ -188,7 +206,8 @@ func (s *WebmSaver) initWriter(width, height int) {
 	log.Infof("WebM saver has started with video width=%d, height=%d\n", width, height)
 	s.audioWriter = ws[0]
 	s.videoWriter = ws[1]
-	s.vttWriter = ws[2]
+	s.vttAudioWriter = ws[2]
+	s.vttVideoWriter = ws[3]
 }
 
 // SampleWriter for writing samples
