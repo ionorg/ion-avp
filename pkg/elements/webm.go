@@ -113,7 +113,7 @@ func (s *WebmSaver) pushVP8(sample *avp.Sample) {
 		width := int(raw & 0x3FFF)
 		height := int((raw >> 16) & 0x3FFF)
 
-		if s.videoWriter == nil || s.audioWriter == nil {
+		if s.videoWriter == nil {
 			// Initialize WebM saver using received frame size.
 			s.initWriter(width, height)
 		}
