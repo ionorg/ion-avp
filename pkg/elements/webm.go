@@ -60,6 +60,16 @@ func (s *WebmSaver) Close() {
 
 	s.closed = true
 
+	if s.vttAudioWriter != nil {
+		if err := s.vttAudioWriter.Close(); err != nil {
+			log.Errorf("vtt audio close err: %s", err)
+		}
+	}
+	if s.vttVideoWriter != nil {
+		if err := s.vttVideoWriter.Close(); err != nil {
+			log.Errorf("vtt video close err: %s", err)
+		}
+	}
 	if s.audioWriter != nil {
 		if err := s.audioWriter.Close(); err != nil {
 			log.Errorf("audio close err: %s", err)
