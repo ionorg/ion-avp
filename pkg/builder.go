@@ -111,14 +111,10 @@ func (b *Builder) build() {
 			continue
 		}
 
-		log.Infof("pushed packet onto stack", pkt.SequenceNumber)
 		b.builder.Insert(pkt)
 
 		for {
 			sample := b.builder.Pop()
-			if sample != nil {
-				log.Infof("popped from the stack", sample.Timestamp, sample.PrevDroppedPackets)
-			}
 
 			if b.stopped.get() {
 				return
