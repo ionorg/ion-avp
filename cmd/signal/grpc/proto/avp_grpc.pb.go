@@ -11,7 +11,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+// Requires gRPC-Go v1.32.0 or later.
+const _ = grpc.SupportPackageIsVersion7
 
 // AVPClient is the client API for AVP service.
 //
@@ -29,7 +30,7 @@ func NewAVPClient(cc grpc.ClientConnInterface) AVPClient {
 }
 
 func (c *aVPClient) Signal(ctx context.Context, opts ...grpc.CallOption) (AVP_SignalClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_AVP_serviceDesc.Streams[0], "/avp.AVP/Signal", opts...)
+	stream, err := c.cc.NewStream(ctx, &AVP_ServiceDesc.Streams[0], "/avp.AVP/Signal", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -71,13 +72,20 @@ type AVPServer interface {
 type UnimplementedAVPServer struct {
 }
 
-func (*UnimplementedAVPServer) Signal(AVP_SignalServer) error {
+func (UnimplementedAVPServer) Signal(AVP_SignalServer) error {
 	return status.Errorf(codes.Unimplemented, "method Signal not implemented")
 }
-func (*UnimplementedAVPServer) mustEmbedUnimplementedAVPServer() {}
+func (UnimplementedAVPServer) mustEmbedUnimplementedAVPServer() {}
 
-func RegisterAVPServer(s *grpc.Server, srv AVPServer) {
-	s.RegisterService(&_AVP_serviceDesc, srv)
+// UnsafeAVPServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to AVPServer will
+// result in compilation errors.
+type UnsafeAVPServer interface {
+	mustEmbedUnimplementedAVPServer()
+}
+
+func RegisterAVPServer(s grpc.ServiceRegistrar, srv AVPServer) {
+	s.RegisterService(&AVP_ServiceDesc, srv)
 }
 
 func _AVP_Signal_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -106,7 +114,10 @@ func (x *aVPSignalServer) Recv() (*SignalRequest, error) {
 	return m, nil
 }
 
-var _AVP_serviceDesc = grpc.ServiceDesc{
+// AVP_ServiceDesc is the grpc.ServiceDesc for AVP service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var AVP_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "avp.AVP",
 	HandlerType: (*AVPServer)(nil),
 	Methods:     []grpc.MethodDesc{},

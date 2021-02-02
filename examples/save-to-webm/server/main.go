@@ -37,7 +37,7 @@ func createWebmSaver(sid, pid, tid string, config []byte) avp.Element {
 		path.Join(conf.Webmsaver.Path, fmt.Sprintf("%s-%s.webm", sid, pid)),
 		4096,
 	)
-	webm := elements.NewWebmSaver()
+	webm := elements.NewWebmSaver(nil)
 	webm.Attach(filewriter)
 	return webm
 }

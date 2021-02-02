@@ -251,6 +251,38 @@ func (t *WebRTCTransport) Process(pid, tid, eid string, config []byte) error {
 	return nil
 }
 
+// Attach an element that already exists
+func (t *WebRTCTransport) Run(tid string, element Element) error {
+	log.Infof("WebRTCTransport.Run tid=%s", tid)
+
+	b := t.builders[tid]
+	if b == nil {
+		log.Debugf("builder not found for track %s. queuing.", tid)
+		t.pending[tid] = append(t.pending[tid], PendingProcess{
+			pid: tid,
+			fn:  func() Element { return element },
+		})
+		return nil
+	}
+
+	process := t.processes[tid]
+	if process == nil {
+		process = element
+		t.processes[tid] = process
+	}
+
+	b.AttachElement(process)
+
+	return nil
+}
+
+// Stop processing a track. Key is pid (Process) or tid (Run).
+func (t *WebRTCTransport) Stop(key string) {
+	if b := t.builders[key]; b != nil {
+		b.stop()
+	}
+}
+
 // CreateOffer starts the PeerConnection and generates the localDescription
 func (t *WebRTCTransport) CreateOffer() (webrtc.SessionDescription, error) {
 	return t.pub.CreateOffer()

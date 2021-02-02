@@ -11,6 +11,8 @@ service AVP {
 message SignalRequest {
     oneof payload {
         Process process = 1;
+        RecordStart recordStart = 2;
+        RecordStop recordStop = 3;
     }
 }
 
@@ -24,4 +26,39 @@ message Process {
     string tid = 4;      // track id
     string eid = 5;      // element id
     bytes config = 6;
+}
+
+// Record a track to disk
+message RecordStart {
+	string sfu = 1;			// media sfu address
+	string sid = 2;			// session id
+	string tid = 3;			// track id
+	RecordConfig cfg = 4;	// everything we need to configure on the recording
+}
+
+// Stop recording a track. Ensures recording gets flushed to disk.
+message RecordStop {
+	string sfu = 1;			// media sfu address
+	string sid = 2;			// session id
+	string tid = 3;			// track id
+}
+
+message RecordConfig {
+	enum Format {
+		WEBM = 0;
+	}
+	enum Audio {
+		AUDIO_OFF = 0;
+		AUDIO_MONO = 1;
+		AUDIO_STEREO = 2;
+	}
+	enum Video {
+		VIDEO_OFF = 0;
+		VIDEO_ON = 1;
+	}
+	Format format = 1;
+	string filename = 2;	// full path to write recording to
+	Audio audio = 3;
+	Video video = 4;
+	uint64 buffersize = 5;	// in bytes
 }

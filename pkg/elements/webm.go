@@ -1,6 +1,7 @@
 package elements
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -18,12 +19,27 @@ type WebmSaver struct {
 	audioWriter, videoWriter       webm.BlockWriteCloser
 	audioTimestamp, videoTimestamp uint32
 	sampleWriter                   *SampleWriter
+	cfg                            WebmSaverConfig
 }
 
-// NewWebmSaver Initialize a new webm saver
-func NewWebmSaver() *WebmSaver {
+// Configure WebmSaver.
+// e.g. pass just `Audio: true` to record an audio-only stream.
+// Audio: Record the audio track.
+// Video: Record the video track.
+type WebmSaverConfig struct {
+	Audio bool
+	Video bool
+}
+
+// NewWebmSaver Initialize a new webm saver.
+// Pass nil to enable audio and video tracks, the normal case.
+func NewWebmSaver(cfg *WebmSaverConfig) *WebmSaver {
+	if cfg == nil {
+		cfg = &WebmSaverConfig{Audio: true, Video: true}
+	}
 	return &WebmSaver{
 		sampleWriter: NewSampleWriter(),
+		cfg:          *cfg,
 	}
 }
 
@@ -66,6 +82,12 @@ func (s *WebmSaver) Close() {
 }
 
 func (s *WebmSaver) pushOpus(sample *avp.Sample) {
+	if !s.cfg.Audio {
+		return
+	}
+	if s.audioWriter == nil && !s.cfg.Video {
+		s.initWriter(0, 0)
+	}
 	if s.audioWriter != nil {
 		if s.audioTimestamp == 0 {
 			s.audioTimestamp = sample.Timestamp
@@ -78,6 +100,9 @@ func (s *WebmSaver) pushOpus(sample *avp.Sample) {
 }
 
 func (s *WebmSaver) pushVP8(sample *avp.Sample) {
+	if !s.cfg.Video {
+		return
+	}
 	payload := sample.Payload.([]byte)
 	// Read VP8 header.
 	videoKeyframe := (payload[0]&0x1 == 0)
@@ -88,7 +113,7 @@ func (s *WebmSaver) pushVP8(sample *avp.Sample) {
 		width := int(raw & 0x3FFF)
 		height := int((raw >> 16) & 0x3FFF)
 
-		if s.videoWriter == nil || s.audioWriter == nil {
+		if s.videoWriter == nil {
 			// Initialize WebM saver using received frame size.
 			s.initWriter(width, height)
 		}
@@ -115,38 +140,59 @@ func (s *WebmSaver) initWriter(width, height int) {
 		}),
 		mkvcore.WithSeekHead(true),
 	}
-	ws, err := webm.NewSimpleBlockWriter(s.sampleWriter,
-		[]webm.TrackEntry{
-			{
-				Name:            "Audio",
-				TrackNumber:     1,
-				TrackUID:        12345,
-				CodecID:         "A_OPUS",
-				TrackType:       2,
-				DefaultDuration: 20000000,
-				Audio: &webm.Audio{
-					SamplingFrequency: 48000.0,
-					Channels:          2,
-				},
-			}, {
-				Name:            "Video",
-				TrackNumber:     2,
-				TrackUID:        67890,
-				CodecID:         "V_VP8",
-				TrackType:       1,
-				DefaultDuration: 20000000,
-				Video: &webm.Video{
-					PixelWidth:  uint64(width),
-					PixelHeight: uint64(height),
-				},
+	var tracks []webm.TrackEntry
+	var audioIdx, videoIdx int
+	if s.cfg.Audio {
+		tracks = append(tracks, webm.TrackEntry{
+			Name:            "Audio",
+			TrackNumber:     1,
+			TrackUID:        12345,
+			CodecID:         "A_OPUS",
+			TrackType:       2,
+			DefaultDuration: 20000000,
+			Audio: &webm.Audio{
+				SamplingFrequency: 48000.0,
+				Channels:          2,
 			},
-		}, options...)
+		})
+		audioIdx = 0
+	}
+	if s.cfg.Video {
+		var trackNum uint64
+		if s.cfg.Audio {
+			trackNum = 2
+			videoIdx = 1
+		} else {
+			trackNum = 1
+			videoIdx = 0
+		}
+		tracks = append(tracks, webm.TrackEntry{
+			Name:            "Video",
+			TrackNumber:     trackNum,
+			TrackUID:        67890,
+			CodecID:         "V_VP8",
+			TrackType:       1,
+			DefaultDuration: 20000000,
+			Video: &webm.Video{
+				PixelWidth:  uint64(width),
+				PixelHeight: uint64(height),
+			},
+		})
+	}
+	ws, err := webm.NewSimpleBlockWriter(s.sampleWriter, tracks, options...)
 	if err != nil {
 		log.Errorf("init writer err: %s", err)
 	}
-	log.Infof("WebM saver has started with video width=%d, height=%d\n", width, height)
-	s.audioWriter = ws[0]
-	s.videoWriter = ws[1]
+	var msg string
+	if s.cfg.Audio {
+		s.audioWriter = ws[audioIdx]
+		msg = "audio only"
+	}
+	if s.cfg.Video {
+		s.videoWriter = ws[videoIdx]
+		msg = fmt.Sprintf("video width=%d, height=%d", width, height)
+	}
+	log.Infof("WebM saver has started with %s", msg)
 }
 
 // SampleWriter for writing samples

@@ -12,7 +12,8 @@ import (
 // FileWriter instance
 type FileWriter struct {
 	Leaf
-	wr io.Writer
+	wr   io.Writer
+	path string
 }
 
 // NewFileWriter instance
@@ -25,12 +26,15 @@ func NewFileWriter(path string, bufSize int) *FileWriter {
 		return nil
 	}
 
-	fw := &FileWriter{}
+	fw := &FileWriter{
+		path: path,
+	}
 	if bufSize > 0 {
 		fw.wr = bufio.NewWriterSize(f, bufSize)
 	} else {
 		fw.wr = f
 	}
+	log.Infof("FileWriter opened %s", path)
 	return fw
 }
 
@@ -42,9 +46,9 @@ func (w *FileWriter) Write(sample *avp.Sample) error {
 func (w *FileWriter) Close() {
 	if c, ok := w.wr.(*bufio.Writer); ok {
 		c.Flush()
-		return
 	}
 	if c, ok := w.wr.(io.Closer); ok {
 		c.Close()
 	}
+	log.Infof("FileWriter closed %s", w.path)
 }
