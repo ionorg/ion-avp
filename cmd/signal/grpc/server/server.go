@@ -78,18 +78,21 @@ func (s *server) Signal(stream pb.AVP_SignalServer) error {
 					payload.RecordStart.Tid,
 					webm,
 				); err != nil {
-					log.Errorf("record error: %v", err)
+					log.Errorf("RecordStart Run error: %v", err)
 				}
 			default:
-				log.Errorf("Record: unknown format %s", cfg.GetFormat())
+				log.Errorf("RecordStart: unknown format %s", cfg.GetFormat())
 			}
 
 		case *pb.SignalRequest_RecordStop:
-			s.avp.Stop(
+			err := s.avp.Stop(
 				payload.RecordStop.Sfu,
 				payload.RecordStop.Sid,
 				payload.RecordStop.Tid,
 			)
+			if err != nil {
+				log.Errorf("RecordStop error: %v", err)
+			}
 		}
 	}
 }
