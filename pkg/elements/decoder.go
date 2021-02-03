@@ -3,6 +3,7 @@
 package elements
 
 import (
+	"sync"
 	"time"
 
 	avp "github.com/pion/ion-avp/pkg"
@@ -12,6 +13,7 @@ import (
 
 // Decoder instance
 type Decoder struct {
+	sync.Mutex
 	Node
 	ctx   *vpx.CodecCtx
 	iface *vpx.CodecIface
@@ -59,7 +61,9 @@ func (dec *Decoder) Write(sample *avp.Sample) error {
 			}
 		}
 
+		dec.Lock()
 		err := vpx.Error(vpx.CodecDecode(dec.ctx, string(payload), uint32(len(payload)), nil, 0))
+		dec.Unlock()
 		if err != nil {
 			return err
 		}
@@ -78,6 +82,8 @@ func (dec *Decoder) Close() {
 }
 
 func (dec *Decoder) write() error {
+	dec.Lock()
+	defer dec.Unlock()
 	var iter vpx.CodecIter
 	img := vpx.CodecGetFrame(dec.ctx, &iter)
 
