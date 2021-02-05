@@ -54,16 +54,19 @@ func (a *AVP) Run(addr, sid, tid string, element avp.Element) error {
 
 // Stop stops processing a track. Call when Process or Run should end.
 func (a *AVP) Stop(addr, sid, tid string) error {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	t, err := a.getTransport(addr, sid, nil)
+	t, err := a.getTransportLocked(addr, sid, nil)
 	if err != nil {
 		return err
 	}
 
 	t.Stop(tid)
 	return nil
+}
+
+func (a *AVP) getTransportLocked(addr, sid string, config []byte) (*avp.WebRTCTransport, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.getTransport(addr, sid, nil)
 }
 
 func (a *AVP) getTransport(addr, sid string, config []byte) (*avp.WebRTCTransport, error) {
