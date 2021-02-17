@@ -11,3 +11,4 @@ main
 .DS_Store
 out
 .vscode
+.stignore
