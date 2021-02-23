@@ -11,6 +11,13 @@ import (
 	log "github.com/pion/ion-log"
 )
 
+const (
+	defaultWidth           = 640
+	defaultHeight          = 480
+	maxBufferedSamples     = 60 * 15 // 60 FPS for 15 seconds
+	maxAudioVideoSyncDelay = time.Duration(15) * time.Second
+)
+
 // WebmSaver Module for saving rtp streams to webm
 type WebmSaver struct {
 	sync.Mutex
@@ -19,17 +26,24 @@ type WebmSaver struct {
 	vttAudioWriter, vttVideoWriter webm.BlockWriteCloser
 	audioTimestamp, videoTimestamp uint32
 	sampleWriter                   *SampleWriter
+	preBuffering                   []*avp.Sample
 }
 
 // NewWebmSaver Initialize a new webm saver
 func NewWebmSaver() *WebmSaver {
 	return &WebmSaver{
 		sampleWriter: NewSampleWriter(),
+		preBuffering: make([]*avp.Sample, 0, maxBufferedSamples),
 	}
 }
 
 // Write sample to webmsaver
 func (s *WebmSaver) Write(sample *avp.Sample) error {
+
+	if s.handlePrebuffer(sample) {
+		return nil
+	}
+
 	if sample.Type == avp.TypeVP8 {
 		if sample.PrevDroppedPackets > 0 {
 			s.pushVideoDropped(sample)
@@ -44,6 +58,55 @@ func (s *WebmSaver) Write(sample *avp.Sample) error {
 	return nil
 }
 
+func (s *WebmSaver) handlePrebuffer(sample *avp.Sample) bool {
+	if s.preBuffering == nil {
+		return false
+	}
+
+	if sample != nil {
+		s.preBuffering = append(s.preBuffering, sample)
+	}
+
+	initVideoNow := func(useWidth, useHeight int) {
+		// Initialize WebM saver using received frame size.
+		s.initWriter(useWidth, useHeight)
+
+		preBuffering := s.preBuffering
+		s.preBuffering = nil
+
+		for _, bufferedSample := range preBuffering {
+			s.Write(bufferedSample)
+		}
+	}
+
+	if sample == nil || len(s.preBuffering) == cap(s.preBuffering) {
+		initVideoNow(defaultWidth, defaultHeight)
+		return true
+	}
+
+	if sample.Type != avp.TypeVP8 {
+		return true
+	}
+
+	payload := sample.Payload.([]byte)
+	if len(payload) < 10 {
+		return true
+	}
+
+	// Read VP8 header.
+	if payload[0]&0x1 != 0 {
+		return true
+	}
+
+	// Keyframe has frame information.
+	raw := uint(payload[6]) | uint(payload[7])<<8 | uint(payload[8])<<16 | uint(payload[9])<<24
+	width := int(raw & 0x3FFF)
+	height := int((raw >> 16) & 0x3FFF)
+
+	initVideoNow(width, height)
+	return true
+}
+
 // Attach attach a child element
 func (s *WebmSaver) Attach(e avp.Element) {
 	s.sampleWriter.Attach(e)
@@ -51,6 +114,9 @@ func (s *WebmSaver) Attach(e avp.Element) {
 
 // Close Close the WebmSaver
 func (s *WebmSaver) Close() {
+
+	s.handlePrebuffer(nil)
+
 	s.Lock()
 	defer s.Unlock()
 
@@ -137,18 +203,6 @@ func (s *WebmSaver) pushVP8(sample *avp.Sample) {
 	// Read VP8 header.
 	videoKeyframe := (payload[0]&0x1 == 0)
 
-	if videoKeyframe {
-		// Keyframe has frame information.
-		raw := uint(payload[6]) | uint(payload[7])<<8 | uint(payload[8])<<16 | uint(payload[9])<<24
-		width := int(raw & 0x3FFF)
-		height := int((raw >> 16) & 0x3FFF)
-
-		if s.videoWriter == nil || s.audioWriter == nil {
-			// Initialize WebM saver using received frame size.
-			s.initWriter(width, height)
-		}
-	}
-
 	if s.videoWriter != nil {
 		if s.videoTimestamp == 0 {
 			s.videoTimestamp = sample.Timestamp
@@ -161,6 +215,8 @@ func (s *WebmSaver) pushVP8(sample *avp.Sample) {
 }
 
 func (s *WebmSaver) initWriter(width, height int) {
+	useInterceptor, _ := mkvcore.NewMultiTrackBlockSorter(mkvcore.WithMaxTimescaleDelay(maxAudioVideoSyncDelay.Milliseconds()), mkvcore.WithSortRule(mkvcore.BlockSorterDropOutdated))
+
 	options := []mkvcore.BlockWriterOption{
 		mkvcore.WithSegmentInfo(&webm.Info{
 			TimecodeScale: webm.DefaultSegmentInfo.TimecodeScale,
@@ -169,6 +225,7 @@ func (s *WebmSaver) initWriter(width, height int) {
 			DateUTC:       time.Now(),
 		}),
 		mkvcore.WithSeekHead(true),
+		mkvcore.WithBlockInterceptor(useInterceptor),
 	}
 	ws, err := webm.NewSimpleBlockWriter(s.sampleWriter,
 		[]webm.TrackEntry{

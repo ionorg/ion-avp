@@ -3,7 +3,7 @@ module github.com/pion/ion-avp
 go 1.15
 
 require (
-	github.com/at-wat/ebml-go v0.13.0
+	github.com/goheadroom/ebml-go v0.14.2-0.20210223160212-f490895a845d // go get -u github.com/goheadroom/ebml-go@robin-20210222-video-glitch
 	github.com/golang/protobuf v1.4.3
 	github.com/lucsky/cuid v1.0.2
 	github.com/pion/ion-log v1.0.0
