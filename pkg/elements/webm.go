@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/goheadroom/ebml-go/mkvcore"
-	"github.com/goheadroom/ebml-go/webm"
+	"github.com/at-wat/ebml-go/mkvcore"
+	"github.com/at-wat/ebml-go/webm"
 
 	avp "github.com/pion/ion-avp/pkg"
 	log "github.com/pion/ion-log"
@@ -18,6 +18,14 @@ const (
 	maxAudioVideoSyncDelay = time.Duration(15) * time.Second
 )
 
+// webmSaverStats keep track of statistics for the sake of logging
+type webmSaverStats struct {
+	audio                      int
+	videoKey, videoInter       int
+	droppedAudio, droppedVideo int
+	unknown                    int
+}
+
 // WebmSaver Module for saving rtp streams to webm
 type WebmSaver struct {
 	sync.Mutex
@@ -27,6 +35,10 @@ type WebmSaver struct {
 	audioTimestamp, videoTimestamp uint32
 	sampleWriter                   *SampleWriter
 	preBuffering                   []*avp.Sample
+
+	statsContext      string
+	preBufferingStats webmSaverStats
+	liveStats         webmSaverStats
 }
 
 // NewWebmSaver Initialize a new webm saver
@@ -37,12 +49,20 @@ func NewWebmSaver() *WebmSaver {
 	}
 }
 
+// SetStatsContext sets the logging information to display when writing
+// stats to the log.
+func (s *WebmSaver) SetStatsContext(context string) {
+	s.statsContext = context
+}
+
 // Write sample to webmsaver
 func (s *WebmSaver) Write(sample *avp.Sample) error {
 
 	if s.handlePrebuffer(sample) {
 		return nil
 	}
+
+	s.handleStats(sample, &s.liveStats)
 
 	if sample.Type == avp.TypeVP8 {
 		if sample.PrevDroppedPackets > 0 {
@@ -62,6 +82,8 @@ func (s *WebmSaver) handlePrebuffer(sample *avp.Sample) bool {
 	if s.preBuffering == nil {
 		return false
 	}
+
+	s.handleStats(sample, &s.preBufferingStats)
 
 	if sample != nil {
 		s.preBuffering = append(s.preBuffering, sample)
@@ -105,6 +127,49 @@ func (s *WebmSaver) handlePrebuffer(sample *avp.Sample) bool {
 
 	initVideoNow(width, height)
 	return true
+}
+
+func (s *WebmSaver) handleStats(sample *avp.Sample, useStats *webmSaverStats) {
+	if len(s.statsContext) < 1 {
+		return
+	}
+
+	report := func(value *int, total, mask int, message string) {
+		wasZero := (*value) == 0
+		(*value) += total
+		if wasZero || (*value)&mask == 0x00 {
+			log.Debugf("WebM saver stat: %d for %s, context=%s\n", (*value), message, s.statsContext)
+		}
+	}
+
+	if nil == sample {
+		report(&useStats.unknown, 1, 0xFF, "unknown nil samples")
+		return
+	}
+
+	switch sample.Type {
+	case avp.TypeOpus:
+		if sample.PrevDroppedPackets > 0 {
+			report(&useStats.droppedAudio, int(sample.PrevDroppedPackets), 0xFF, "audio dropped")
+		}
+		report(&useStats.audio, 1, 0xFF, "audio")
+	case avp.TypeVP8:
+		if sample.PrevDroppedPackets > 0 {
+			report(&useStats.droppedVideo, int(sample.PrevDroppedPackets), 0xFF, "video dropped")
+		}
+
+		payload := sample.Payload.([]byte)
+
+		videoKeyframe := (payload[0]&0x1 == 0)
+
+		if videoKeyframe {
+			report(&useStats.videoKey, 1, 0x3, "video key")
+		} else {
+			report(&useStats.videoInter, 1, 0x3F, "video")
+		}
+	default:
+		report(&useStats.unknown, 1, 0xFF, "unknown samples")
+	}
 }
 
 // Attach attach a child element
