@@ -1,14 +1,17 @@
 package avp
 
 import (
+	"sync"
+
 	log "github.com/pion/ion-log"
 
 	"github.com/pion/webrtc/v3"
 )
 
 type Publisher struct {
-	pc         *webrtc.PeerConnection
-	candidates []webrtc.ICECandidateInit
+	pc             *webrtc.PeerConnection
+	candidates     []webrtc.ICECandidateInit
+	candidatesLock sync.Mutex
 }
 
 // NewPublisher creates a new Publisher
@@ -57,7 +60,9 @@ func (p *Publisher) AddICECandidate(candidate webrtc.ICECandidateInit) error {
 	if p.pc.RemoteDescription() != nil {
 		return p.pc.AddICECandidate(candidate)
 	}
+	p.candidatesLock.Lock()
 	p.candidates = append(p.candidates, candidate)
+	p.candidatesLock.Unlock()
 	return nil
 }
 
@@ -68,8 +73,20 @@ func (p *Publisher) SetRemoteDescription(desc webrtc.SessionDescription) error {
 		log.Errorf("SetRemoteDescription error: %v", err)
 		return err
 	}
+	p.addPendingICE()
 
 	return nil
+}
+
+func (p *Publisher) addPendingICE() {
+	p.candidatesLock.Lock()
+	defer p.candidatesLock.Unlock()
+	for _, c := range p.candidates {
+		if err := p.pc.AddICECandidate(c); err != nil {
+			log.Errorf("AddICECandidate from pending: %s. %v", err, c)
+		}
+	}
+	p.candidates = p.candidates[:0]
 }
 
 // Close peer

@@ -1,13 +1,16 @@
 package avp
 
 import (
+	"sync"
+
 	log "github.com/pion/ion-log"
 	"github.com/pion/webrtc/v3"
 )
 
 type Subscriber struct {
-	pc         *webrtc.PeerConnection
-	candidates []webrtc.ICECandidateInit
+	pc             *webrtc.PeerConnection
+	candidates     []webrtc.ICECandidateInit
+	candidatesLock sync.Mutex
 
 	onTrackFn func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver)
 }
@@ -61,6 +64,7 @@ func (s *Subscriber) Answer(offer webrtc.SessionDescription) (webrtc.SessionDesc
 	if err := s.pc.SetLocalDescription(answer); err != nil {
 		return webrtc.SessionDescription{}, err
 	}
+	s.addPendingICE()
 	return answer, nil
 }
 
@@ -74,6 +78,19 @@ func (s *Subscriber) AddICECandidate(candidate webrtc.ICECandidateInit) error {
 	if s.pc.RemoteDescription() != nil {
 		return s.pc.AddICECandidate(candidate)
 	}
+	s.candidatesLock.Lock()
 	s.candidates = append(s.candidates, candidate)
+	s.candidatesLock.Unlock()
 	return nil
+}
+
+func (s *Subscriber) addPendingICE() {
+	s.candidatesLock.Lock()
+	defer s.candidatesLock.Unlock()
+	for _, c := range s.candidates {
+		if err := s.pc.AddICECandidate(c); err != nil {
+			log.Errorf("AddICECandidate from pending: %s. %v", err, c)
+		}
+	}
+	s.candidates = s.candidates[:0]
 }
