@@ -2,6 +2,7 @@ package elements
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/at-wat/ebml-go/mkvcore"
@@ -30,6 +31,7 @@ type webmSaverStats struct {
 type WebmSaver struct {
 	sync.Mutex
 	closed                         bool
+	writeInProgress                int32
 	audioWriter, videoWriter       webm.BlockWriteCloser
 	vttAudioWriter, vttVideoWriter webm.BlockWriteCloser
 	audioTimestamp, videoTimestamp uint32
@@ -58,7 +60,19 @@ func (s *WebmSaver) SetStatsContext(context string) {
 // Write sample to webmsaver
 func (s *WebmSaver) Write(sample *avp.Sample) error {
 
+	s.Lock()
+
+	if s.closed {
+		// already closed, ignore samples that are pending
+		s.Unlock()
+		return nil
+	}
+
+	atomic.StoreInt32(&(s.writeInProgress), 1)
+	s.Unlock()
+
 	if s.handlePrebuffer(sample) {
+		atomic.StoreInt32(&(s.writeInProgress), 0)
 		return nil
 	}
 
@@ -75,6 +89,7 @@ func (s *WebmSaver) Write(sample *avp.Sample) error {
 		}
 		s.pushOpus(sample)
 	}
+	atomic.StoreInt32(&(s.writeInProgress), 0)
 	return nil
 }
 
@@ -180,14 +195,31 @@ func (s *WebmSaver) Attach(e avp.Element) {
 // Close Close the WebmSaver
 func (s *WebmSaver) Close() {
 
-	s.handlePrebuffer(nil)
+	// wait for any pending writes to complete
+	for {
+		var alreadyClosed bool
+		var closed bool
 
-	s.Lock()
-	defer s.Unlock()
+		s.Lock()
+		if s.closed {
+			alreadyClosed = true
+		}
+		if atomic.LoadInt32(&(s.writeInProgress)) == 0 {
+			s.closed = true
+			closed = true
+		}
+		s.Unlock()
 
-	if s.closed {
-		return
+		if alreadyClosed {
+			return
+		}
+		if closed {
+			break
+		}
+		time.Sleep(time.Millisecond * 20)
 	}
+
+	s.handlePrebuffer(nil)
 
 	s.closed = true
 
