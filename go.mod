@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/at-wat/ebml-go v0.13.0
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/lucsky/cuid v1.0.2
 	github.com/pion/ion-log v1.0.0
 	github.com/pion/ion-sfu v1.9.3
@@ -16,5 +16,5 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/xlab/libvpx-go v0.0.0-20201217121537-9736e1703824
 	google.golang.org/grpc v1.35.0
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.26.0
 )
