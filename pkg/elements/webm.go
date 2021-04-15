@@ -327,8 +327,15 @@ func (s *WebmSaver) initWriter(width, height int) {
 	ws, err := webm.NewSimpleBlockWriter(s.sampleWriter,
 		[]webm.TrackEntry{
 			{
-				Name:            "Audio",
+				Name:            "VttAudioDroppedPacketMeta",
 				TrackNumber:     1,
+				TrackUID:        98765,
+				CodecID:         "D_WEBVTT/METADATA",
+				TrackType:       0x21,
+				DefaultDuration: 20000000,
+			}, {
+				Name:            "Audio",
+				TrackNumber:     2,
 				TrackUID:        12345,
 				CodecID:         "A_OPUS",
 				TrackType:       2,
@@ -338,8 +345,15 @@ func (s *WebmSaver) initWriter(width, height int) {
 					Channels:          2,
 				},
 			}, {
+				Name:            "VttVideoDroppedPacketMeta",
+				TrackNumber:     3,
+				TrackUID:        54321,
+				CodecID:         "D_WEBVTT/METADATA",
+				TrackType:       0x21,
+				DefaultDuration: 20000000,
+			}, {
 				Name:            "Video",
-				TrackNumber:     2,
+				TrackNumber:     4,
 				TrackUID:        67890,
 				CodecID:         "V_VP8",
 				TrackType:       1,
@@ -348,30 +362,16 @@ func (s *WebmSaver) initWriter(width, height int) {
 					PixelWidth:  uint64(width),
 					PixelHeight: uint64(height),
 				},
-			}, {
-				Name:            "VttAudioDroppedPacketMeta",
-				TrackNumber:     3,
-				TrackUID:        98765,
-				CodecID:         "D_WEBVTT/METADATA",
-				TrackType:       0x21,
-				DefaultDuration: 20000000,
-			}, {
-				Name:            "VttVideoDroppedPacketMeta",
-				TrackNumber:     4,
-				TrackUID:        54321,
-				CodecID:         "D_WEBVTT/METADATA",
-				TrackType:       0x21,
-				DefaultDuration: 20000000,
 			},
 		}, options...)
 	if err != nil {
 		log.Errorf("init writer err: %s", err)
 	}
 	log.Infof("WebM saver has started with video width=%d, height=%d\n", width, height)
-	s.audioWriter = ws[0]
-	s.videoWriter = ws[1]
-	s.vttAudioWriter = ws[2]
-	s.vttVideoWriter = ws[3]
+	s.audioWriter = ws[1]
+	s.videoWriter = ws[3]
+	s.vttAudioWriter = ws[0]
+	s.vttVideoWriter = ws[2]
 }
 
 // SampleWriter for writing samples

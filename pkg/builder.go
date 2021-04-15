@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/pion/ion-log"
 	"github.com/pion/rtp"
@@ -42,7 +43,7 @@ type Builder struct {
 }
 
 // NewBuilder Initialize a new audio sample builder
-func NewBuilder(track *webrtc.TrackRemote, maxLate uint16) *Builder {
+func NewBuilder(track *webrtc.TrackRemote, maxLate uint16, maxLateTime time.Duration) *Builder {
 	var depacketizer rtp.Depacketizer
 	var checker rtp.PartitionHeadChecker
 	switch strings.ToLower(track.Codec().MimeType) {
@@ -68,6 +69,8 @@ func NewBuilder(track *webrtc.TrackRemote, maxLate uint16) *Builder {
 	if checker != nil {
 		samplebuilder.WithPartitionHeadChecker(checker)(b.builder)
 	}
+
+	samplebuilder.WithMaxTimeDelay(maxLateTime)(b.builder)
 
 	go b.build()
 	go b.forward()
