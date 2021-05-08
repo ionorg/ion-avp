@@ -92,7 +92,7 @@ func TestNewBuilder_WithOpusName(t *testing.T) {
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
 	sfu.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
-		builder := NewBuilder(track, 200)
+		builder := MustBuilder(NewBuilder(track, 200))
 
 		// To ensure that forward and go on build stops immediately
 		builder.stop()
@@ -134,7 +134,7 @@ func TestNewBuilder_WithVP8Packet(t *testing.T) {
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
 	sfu.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
-		builder = NewBuilder(track, 200)
+		builder = MustBuilder(NewBuilder(track, 200))
 		defer builder.stop()
 		assert.NotNil(t, builder)
 
@@ -177,7 +177,7 @@ func TestNewBuilder_WithVP9Packet(t *testing.T) {
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
 	sfu.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
-		builder = NewBuilder(track, 200)
+		builder = MustBuilder(NewBuilder(track, 200))
 		defer builder.stop()
 		assert.NotNil(t, builder)
 
@@ -227,7 +227,7 @@ func TestNewBuilder_WithH264Packet(t *testing.T) {
 
 	onBuilderFired, onBuilderFiredFunc := context.WithCancel(context.Background())
 	sfu.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
-		builder := NewBuilder(track, 200)
+		builder := MustBuilder(NewBuilder(track, 200))
 		assert.NotNil(t, builder)
 
 		builder.AttachElement(&elementMock{})

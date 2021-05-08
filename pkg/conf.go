@@ -3,8 +3,9 @@ package avp
 import log "github.com/pion/ion-log"
 
 type Samplebuilderconf struct {
-	AudioMaxLate uint16 `mapstructure:"audiomaxlate"`
-	VideoMaxLate uint16 `mapstructure:"videomaxlate"`
+	AudioMaxLate  uint16 `mapstructure:"audiomaxlate"`
+	VideoMaxLate  uint16 `mapstructure:"videomaxlate"`
+	MaxLateTimeMs uint32 `mapstructure:"maxlatems"`
 }
 
 type iceconf struct {
