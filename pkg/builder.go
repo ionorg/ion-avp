@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/pion/ion-log"
 	"github.com/pion/rtp"
@@ -29,6 +30,31 @@ var (
 	ErrCodecNotSupported = errors.New("codec not supported")
 )
 
+type BuilderOptions struct {
+	maxLateTime time.Duration
+}
+
+// BuilderOption configures a BuilderOptions.
+type BuilderOption interface {
+	ApplyToBuilderOptions(opts *BuilderOptions) error
+}
+
+// BuilderOptionFn configures a BuilderOptions.
+type BuilderOptionFn func(*BuilderOptions) error
+
+// ApplyToBuilderOptions implements BuilderOptions.
+func (o BuilderOptionFn) ApplyToBuilderOptions(opts *BuilderOptions) error {
+	return o(opts)
+}
+
+// WithMaxLateTime enables maximum late based on a total duration.
+func WithMaxLateTime(maxLateTime time.Duration) BuilderOptionFn {
+	return func(o *BuilderOptions) error {
+		o.maxLateTime = maxLateTime
+		return nil
+	}
+}
+
 // Builder Module for building video/audio samples from rtp streams
 type Builder struct {
 	mu            sync.RWMutex
@@ -41,8 +67,26 @@ type Builder struct {
 	out           chan *Sample
 }
 
+// MustBuilder panics if creation of a Builder fails, such as
+// when the BuilderOption functions fail.
+func MustBuilder(builder *Builder, err error) *Builder {
+	if err != nil {
+		panic(err)
+	}
+	return builder
+}
+
 // NewBuilder Initialize a new audio sample builder
-func NewBuilder(track *webrtc.TrackRemote, maxLate uint16) *Builder {
+func NewBuilder(track *webrtc.TrackRemote, maxLate uint16, opts ...BuilderOption) (*Builder, error) {
+
+	options := BuilderOptions{}
+
+	for _, o := range opts {
+		if err := o.ApplyToBuilderOptions(&options); err != nil {
+			return nil, err
+		}
+	}
+
 	var depacketizer rtp.Depacketizer
 	var checker rtp.PartitionHeadChecker
 	switch strings.ToLower(track.Codec().MimeType) {
@@ -69,10 +113,14 @@ func NewBuilder(track *webrtc.TrackRemote, maxLate uint16) *Builder {
 		samplebuilder.WithPartitionHeadChecker(checker)(b.builder)
 	}
 
+	if options.maxLateTime != time.Duration(0) {
+		samplebuilder.WithMaxTimeDelay(options.maxLateTime)(b.builder)
+	}
+
 	go b.build()
 	go b.forward()
 
-	return b
+	return b, nil
 }
 
 // AttachElement attaches a element to a builder
@@ -114,7 +162,7 @@ func (b *Builder) build() {
 		b.builder.Push(pkt)
 
 		for {
-			sample, timestamp := b.builder.PopWithTimestamp()
+			sample := b.builder.Pop()
 
 			if b.stopped.get() {
 				return
@@ -127,11 +175,12 @@ func (b *Builder) build() {
 			log.Tracef("Sample from builder: %s sample: %v", b.Track().ID(), sample)
 
 			b.out <- &Sample{
-				ID:             b.track.ID(),
-				Type:           int(b.track.Kind()),
-				SequenceNumber: b.sequence,
-				Timestamp:      timestamp,
-				Payload:        sample.Data,
+				ID:                 b.track.ID(),
+				Type:               int(b.track.Kind()),
+				SequenceNumber:     b.sequence,
+				Timestamp:          sample.PacketTimestamp,
+				PrevDroppedPackets: sample.PrevDroppedPackets,
+				Payload:            sample.Data,
 			}
 			b.sequence++
 		}

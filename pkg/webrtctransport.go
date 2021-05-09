@@ -107,17 +107,19 @@ func NewWebRTCTransport(id string, c Config) *WebRTCTransport {
 		id := track.ID()
 		log.Debugf("Got track: %s", id)
 
-		maxlate := c.SampleBuilder.AudioMaxLate
+		maxPacketsLate := c.SampleBuilder.AudioMaxLate
 		if track.Kind() == webrtc.RTPCodecTypeVideo {
-			maxlate = c.SampleBuilder.VideoMaxLate
+			maxPacketsLate = c.SampleBuilder.VideoMaxLate
 		}
 
-		if maxlate == 0 {
-			log.Warnf("maxlate should not be 0. Using 100.")
-			maxlate = 100
+		if maxPacketsLate == 0 {
+			log.Warnf("audio/video maxlate should not be 0. Using 100.")
+			maxPacketsLate = 100
 		}
 
-		builder := NewBuilder(track, maxlate)
+		maxTimeLate := time.Millisecond * time.Duration(c.SampleBuilder.MaxLateTimeMs)
+
+		builder := MustBuilder(NewBuilder(track, maxPacketsLate, WithMaxLateTime(maxTimeLate)))
 		t.mu.Lock()
 		defer t.mu.Unlock()
 		t.builders[id] = builder
