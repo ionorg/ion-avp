@@ -120,7 +120,7 @@ func (s *WebmSaver) handlePrebuffer(sample *avp.Sample) bool {
 		s.preBuffering = nil
 
 		for _, bufferedSample := range preBuffering {
-			s.Write(bufferedSample)
+			_ = s.Write(bufferedSample)
 		}
 	}
 

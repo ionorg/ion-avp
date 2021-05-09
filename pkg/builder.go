@@ -31,7 +31,6 @@ var (
 )
 
 type BuilderOptions struct {
-	maxLate     uint16
 	maxLateTime time.Duration
 }
 
