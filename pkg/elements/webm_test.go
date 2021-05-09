@@ -61,6 +61,20 @@ func TestWebMSaver_BlockWriterInit(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
+	err = saver.Write(&avp.Sample{
+		Type:               avp.TypeOpus,
+		Payload:            rawOpusPkt,
+		PrevDroppedPackets: 2,
+	})
+	assert.NoError(t, err)
+
+	err = saver.Write(&avp.Sample{
+		Type:               avp.TypeVP8,
+		Payload:            rawKeyframePkt,
+		PrevDroppedPackets: 2,
+	})
+	assert.NoError(t, err)
+
 	var header Header
 	writer.Lock()
 	err = ebml.Unmarshal(bytes.NewReader(writer.buf.Bytes()), &header)
