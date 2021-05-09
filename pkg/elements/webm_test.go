@@ -71,5 +71,5 @@ func TestWebMSaver_BlockWriterInit(t *testing.T) {
 
 	saver.Close()
 
-	assert.Len(t, header.Segment.Tracks.TrackEntry, 2)
+	assert.Len(t, header.Segment.Tracks.TrackEntry, 4)
 }
