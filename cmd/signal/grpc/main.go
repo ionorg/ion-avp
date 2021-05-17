@@ -73,9 +73,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	fixByFile := []string{"asm_amd64.s", "proc.go", "icegatherer.go"}
-	fixByFunc := []string{}
-	log.Init(conf.Log.Level, fixByFile, fixByFunc)
+	log.Init(conf.Log.Level)
 
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
