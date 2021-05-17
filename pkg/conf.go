@@ -1,7 +1,5 @@
 package avp
 
-import log "github.com/pion/ion-log"
-
 type Samplebuilderconf struct {
 	AudioMaxLate  uint16 `mapstructure:"audiomaxlate"`
 	VideoMaxLate  uint16 `mapstructure:"videomaxlate"`
@@ -20,9 +18,14 @@ type webrtcconf struct {
 	ICEServers   []iceconf `mapstructure:"iceserver"`
 }
 
+// Config defines parameters for the logger
+type logConf struct {
+	Level string `mapstructure:"level"`
+}
+
 // Config for base AVP
 type Config struct {
-	Log           log.Config        `mapstructure:"log"`
+	Log           logConf           `mapstructure:"log"`
 	SampleBuilder Samplebuilderconf `mapstructure:"samplebuilder"`
 	WebRTC        webrtcconf        `mapstructure:"webrtc"`
 }
