@@ -15,5 +15,5 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/xlab/libvpx-go v0.0.0-20201217121537-9736e1703824
 	google.golang.org/grpc v1.35.0
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.27.1
 )
