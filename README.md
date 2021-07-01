@@ -14,6 +14,9 @@
 </p>
 <br>
 
+# Deprecated
+We are no longer maintaining ion-avp. A better approach is to use the go sdk and gstreamer to record the sfu feeds. You can see an example here: https://github.com/pion/ion-sdk-go/tree/master/example/ion-sfu-gstreamer-receive. Please join us in #ion in the gophers slack if you have questions
+
 ion-avp is an extensible audio/video processing service designed for use with ion-sfu.
 
 ## Getting Started
