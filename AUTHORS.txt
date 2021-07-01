@@ -1,0 +1,15 @@
+# Thank you to everyone that made Pion possible. If you are interested in contributing
+# we would love to have you https://github.com/pion/webrtc/wiki/Contributing
+#
+# This file is auto generated, using git to list all individuals contributors.
+# see `.github/generate-authors.sh` for the scripting
+agnek <agnek@users.noreply.github.com>
+CloudWebRTC <duanweiwei1982@gmail.com>
+Graham King <graham@gkgk.org>
+Jin Gong <40499268+cgojin@users.noreply.github.com>
+Joshua Obasaju <41480580+obasajujoshua31@users.noreply.github.com>
+Kevin Wang <kevmo314@gmail.com>
+Robin Raymond <robin-raymond@users.noreply.github.com>
+Tarrence van As <tarrence13@gmail.com>
+Tarrence van As <tarrencev@users.noreply.github.com>
+tarrencev <tarrence13@gmail.com>
